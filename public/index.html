@@ -14,7 +14,7 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 font-sans pb-24 selection:bg-blue-600 selection:text-white" onload="selectCategory('pulsa')">
+<body class="bg-slate-50 text-slate-800 font-sans pb-24 selection:bg-blue-600 selection:text-white" onload="filterCategory('game')">
 
     <header class="bg-blue-600 text-white sticky top-0 z-50 shadow-md">
         <div class="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
@@ -30,8 +30,9 @@
 
     <main class="max-w-md mx-auto px-4 mt-4">
         
-        <!-- KATALOG -->
+        <!-- VIEW 1: KATALOG UTAMA (Desain Asli Utuh) -->
         <div id="viewCatalog" class="fade-in block">
+            
             <div class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-5 text-white shadow-lg mb-5 relative overflow-hidden">
                 <div class="relative z-10">
                     <span class="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Resmi & Legal</span>
@@ -41,35 +42,35 @@
                 <i class="fas fa-bolt absolute -right-3 -bottom-4 text-7xl text-white/10"></i>
             </div>
 
-            <!-- Kategori Pilihan -->
-            <div class="grid grid-cols-4 gap-3 mb-5 text-center">
-                <div onclick="selectCategory('game')" id="cat-game" class="cat-btn bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition">
+            <!-- Kategori Utama -->
+            <div class="grid grid-cols-4 gap-3 mb-6 text-center">
+                <div onclick="filterCategory('game')" id="menu-game" class="menu-cat bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition">
                     <div class="w-10 h-10 mx-auto rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center mb-1.5"><i class="fas fa-gamepad"></i></div>
                     <span class="text-[10px] font-bold text-slate-700">Games</span>
                 </div>
-                <div onclick="selectCategory('pulsa')" id="cat-pulsa" class="cat-btn bg-blue-50 border-blue-500 p-3 rounded-xl border shadow-sm cursor-pointer transition">
+                <div onclick="filterCategory('pulsa')" id="menu-pulsa" class="menu-cat bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition">
                     <div class="w-10 h-10 mx-auto rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mb-1.5"><i class="fas fa-mobile-screen-button"></i></div>
-                    <span class="text-[10px] font-bold text-slate-700">Pulsa</span>
+                    <span class="text-[10px] font-bold text-slate-700">Pulsa & Data</span>
                 </div>
-                <div onclick="selectCategory('token')" id="cat-token" class="cat-btn bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition">
+                <div onclick="filterCategory('token')" id="menu-token" class="menu-cat bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition">
                     <div class="w-10 h-10 mx-auto rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center mb-1.5"><i class="fas fa-lightbulb"></i></div>
-                    <span class="text-[10px] font-bold text-slate-700">Token</span>
+                    <span class="text-[10px] font-bold text-slate-700">Token PLN</span>
                 </div>
-                <div onclick="selectCategory('ewallet')" id="cat-ewallet" class="cat-btn bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition">
+                <div onclick="filterCategory('ewallet')" id="menu-ewallet" class="menu-cat bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition">
                     <div class="w-10 h-10 mx-auto rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center mb-1.5"><i class="fas fa-wallet"></i></div>
                     <span class="text-[10px] font-bold text-slate-700">E-Wallet</span>
                 </div>
             </div>
 
-            <!-- List Brand Dinamis Berdasarkan Kategori -->
+            <!-- Tempat Produk Muncul Otomatis Sesuai Kategori -->
             <div class="mb-6">
-                <div id="brandContainer" class="grid grid-cols-2 gap-3">
+                <div id="dynamicCatalogGrid" class="grid grid-cols-2 gap-3">
                     <div class="col-span-2 text-center text-xs text-slate-400 py-6"><i class="fas fa-spinner fa-spin mr-1"></i> Memuat produk...</div>
                 </div>
             </div>
         </div>
 
-        <!-- FORM CHECKOUT -->
+        <!-- VIEW 2: FORM CHECKOUT DETAIL -->
         <div id="viewCheckout" class="hidden fade-in">
             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-4 flex items-center gap-3">
                 <div class="w-12 h-12 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xl"><i class="fas fa-cart-shopping"></i></div>
@@ -82,7 +83,7 @@
             <form id="formCheckout">
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-4">
                     <label id="inputLabelText" class="block text-xs font-bold text-slate-700 mb-2">Masukkan User ID / Nomor Tujuan</label>
-                    <input type="text" id="targetId" required placeholder="Contoh: 08123456789 atau ID Game" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-600">
+                    <input type="text" id="targetId" required placeholder="Contoh: 12345678" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-600">
                 </div>
 
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-6">
@@ -117,13 +118,12 @@
     </div>
 
     <script>
-        async function selectCategory(categoryName) {
-            // Ubah warna tombol kategori aktif
-            document.querySelectorAll('.cat-btn').forEach(btn => btn.classList.remove('bg-blue-50', 'border-blue-500'));
-            const activeBtn = document.getElementById('cat-' + categoryName);
-            if(activeBtn) activeBtn.classList.add('bg-blue-50', 'border-blue-500');
+        async function filterCategory(categoryName) {
+            document.querySelectorAll('.menu-cat').forEach(el => el.classList.remove('bg-blue-50', 'border-blue-500'));
+            const activeMenu = document.getElementById('menu-' + categoryName);
+            if(activeMenu) activeMenu.classList.add('bg-blue-50', 'border-blue-500');
 
-            const container = document.getElementById('brandContainer');
+            const container = document.getElementById('dynamicCatalogGrid');
             container.innerHTML = `<div class="col-span-2 text-center text-xs text-slate-400 py-6"><i class="fas fa-spinner fa-spin mr-1"></i> Memuat produk...</div>`;
 
             try {
@@ -137,18 +137,18 @@
                 if (Array.isArray(brands) && brands.length > 0) {
                     container.innerHTML = brands.map(b => `
                         <div onclick="openCheckout('${b}', '${categoryName}')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center"><i class="fas fa-bolt"></i></div>
+                            <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center"><i class="fas fa-bolt"></i></div>
                             <div>
                                 <p class="text-xs font-bold text-slate-800 truncate">${b}</p>
-                                <p class="text-[10px] text-slate-400">Tersedia via API</p>
+                                <p class="text-[10px] text-slate-400">Otomatis 24 Jam</p>
                             </div>
                         </div>
                     `).join('');
                 } else {
-                    container.innerHTML = `<div class="col-span-2 text-center text-xs text-red-500 py-4">Tidak ada produk di kategori ini.</div>`;
+                    container.innerHTML = `<div class="col-span-2 text-center text-xs text-red-500 py-6">Tidak ada produk aktif di kategori ini.</div>`;
                 }
             } catch (e) {
-                container.innerHTML = `<div class="col-span-2 text-center text-xs text-red-500 py-4">Gagal memuat data.</div>`;
+                container.innerHTML = `<div class="col-span-2 text-center text-xs text-red-500 py-6">Gagal memuat data.</div>`;
             }
         }
 
@@ -177,7 +177,7 @@
             const btnPay = document.getElementById('btnPay');
             btnPay.disabled = true;
 
-            container.innerHTML = `<div class="col-span-2 text-center text-xs text-slate-500 py-6"><i class="fas fa-spinner fa-spin mr-2 text-lg"></i> Mengambil produk...</div>`;
+            container.innerHTML = `<div class="col-span-2 text-center text-xs text-slate-500 py-6"><i class="fas fa-spinner fa-spin mr-2 text-lg"></i> Mengambil nominal...</div>`;
             window.scrollTo(0,0);
 
             try {
