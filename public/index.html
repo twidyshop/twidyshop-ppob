@@ -3,257 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TWIDY SHOP - Pusat Top Up & PPOB Terlengkap</title>
+    <title>TWIDY SHOP - Top Up & PPOB Otomatis</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <style>
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .fade-in { animation: fadeIn 0.25s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Midtrans Snap Production CDN (Ganti CLIENT_KEY_KAMU dengan Client Key Live Midtrans-mu) -->
+    <script src="https://app.midtrans.com/snap/snap.js" data-client-key="CLIENT_KEY_KAMU"></script>
 </head>
-<body class="bg-slate-50 text-slate-800 font-sans pb-24 selection:bg-blue-600 selection:text-white">
+<body class="bg-gray-100 font-sans pb-16">
 
-    <!-- HEADER -->
-    <header class="bg-blue-600 text-white sticky top-0 z-50 shadow-md">
-        <div class="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <button id="btnBack" class="hidden text-white hover:text-blue-200 transition" onclick="switchView('catalog')">
-                    <i class="fas fa-arrow-left text-lg"></i>
-                </button>
-                <h1 class="text-xl font-extrabold tracking-wide">TWIDY<span class="text-yellow-300">SHOP</span></h1>
-            </div>
-            <span class="text-xs bg-blue-700 px-2.5 py-1 rounded-full font-medium text-blue-100"><i class="fas fa-circle text-emerald-400 text-[8px] mr-1"></i> Otomatis 24 Jam</span>
-        </div>
-    </header>
+    <!-- Header -->
+    <div class="bg-blue-600 text-white p-4 shadow-md flex justify-between items-center">
+        <h1 class="text-xl font-bold tracking-wider">TWIDY SHOP</h1>
+        <span class="text-xs bg-emerald-500 text-white px-2 py-1 rounded-full font-medium"><i class="fa-solid fa-circle text-[8px] mr-1"></i>Otomatis 24 Jam</span>
+    </div>
 
-    <main class="max-w-md mx-auto px-4 mt-4">
+    <!-- Main Container -->
+    <div class="max-w-md mx-auto p-4">
         
-        <!-- ================= VIEW 1: BERANDA / KATALOG UTAMA ================= -->
-        <div id="viewCatalog" class="fade-in block">
+        <!-- Form Transaksi -->
+        <div class="bg-white rounded-xl shadow-sm p-5 mt-4">
+            <h2 class="text-base font-bold text-gray-800 mb-3 border-b pb-2">Form Transaksi Otomatis</h2>
             
-            <!-- Banner Promo -->
-            <div class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-5 text-white shadow-lg mb-5 relative overflow-hidden">
-                <div class="relative z-10">
-                    <span class="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Resmi & Legal</span>
-                    <h2 class="text-lg font-bold mt-1">Transaksi Tanpa Ribet</h2>
-                    <p class="text-xs text-blue-100 mt-0.5">Pulsa, Token, E-Wallet, & Game Instant Masuk.</p>
-                </div>
-                <i class="fas fa-bolt absolute -right-3 -bottom-4 text-7xl text-white/10"></i>
-            </div>
-
-            <!-- Kategori Utama PPOB & Game -->
-            <div class="grid grid-cols-4 gap-3 mb-6 text-center">
-                <div onclick="filterCategory('game')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition">
-                    <div class="w-10 h-10 mx-auto rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center mb-1.5"><i class="fas fa-gamepad"></i></div>
-                    <span class="text-[10px] font-bold text-slate-700">Games</span>
-                </div>
-                <div onclick="filterCategory('pulsa')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition">
-                    <div class="w-10 h-10 mx-auto rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mb-1.5"><i class="fas fa-mobile-screen-button"></i></div>
-                    <span class="text-[10px] font-bold text-slate-700">Pulsa & Data</span>
-                </div>
-                <div onclick="filterCategory('token')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition">
-                    <div class="w-10 h-10 mx-auto rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center mb-1.5"><i class="fas fa-lightbulb"></i></div>
-                    <span class="text-[10px] font-bold text-slate-700">Token PLN</span>
-                </div>
-                <div onclick="filterCategory('ewallet')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition">
-                    <div class="w-10 h-10 mx-auto rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center mb-1.5"><i class="fas fa-wallet"></i></div>
-                    <span class="text-[10px] font-bold text-slate-700">E-Wallet</span>
-                </div>
-            </div>
-
-            <!-- LIST PRODUK LENGKAP -->
-            <div id="productSections">
-                
-                <!-- Section Game Populer -->
-                <div class="mb-6 category-group" data-cat="game">
-                    <h3 class="font-bold text-slate-800 mb-3 text-sm flex items-center gap-2"><i class="fas fa-fire text-red-500"></i> Top Up Game</h3>
-                    <div class="grid grid-cols-3 gap-3">
-                        <div onclick="openCheckout('Mega Tower', 'game', 'id')" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:border-blue-500 transition p-2 text-center">
-                            <div class="aspect-square rounded-lg bg-emerald-600 text-white flex items-center justify-center text-2xl mb-2"><i class="fas fa-tower-observation"></i></div>
-                            <p class="text-[11px] font-bold text-slate-700 truncate">Mega Tower</p>
-                        </div>
-                        <div onclick="openCheckout('Mobile Legends', 'game', 'id')" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:border-blue-500 transition p-2 text-center">
-                            <div class="aspect-square rounded-lg bg-blue-600 text-white flex items-center justify-center text-2xl mb-2"><i class="fas fa-shield-halved"></i></div>
-                            <p class="text-[11px] font-bold text-slate-700 truncate">Mobile Legends</p>
-                        </div>
-                        <div onclick="openCheckout('Free Fire', 'game', 'id')" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:border-blue-500 transition p-2 text-center">
-                            <div class="aspect-square rounded-lg bg-orange-600 text-white flex items-center justify-center text-2xl mb-2"><i class="fas fa-crosshairs"></i></div>
-                            <p class="text-[11px] font-bold text-slate-700 truncate">Free Fire</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Section Pulsa & Data -->
-                <div class="mb-6 category-group" data-cat="pulsa">
-                    <h3 class="font-bold text-slate-800 mb-3 text-sm flex items-center gap-2"><i class="fas fa-signal text-emerald-500"></i> Pulsa & Paket Data</h3>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div onclick="openCheckout('Pulsa Regular', 'pulsa', 'phone')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center"><i class="fas fa-phone"></i></div>
-                            <div>
-                                <p class="text-xs font-bold text-slate-800">Pulsa Seluler</p>
-                                <p class="text-[10px] text-slate-400">Telkomsel, Indosat, dll</p>
-                            </div>
-                        </div>
-                        <div onclick="openCheckout('Paket Data', 'pulsa', 'phone')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center"><i class="fas fa-globe"></i></div>
-                            <div>
-                                <p class="text-xs font-bold text-slate-800">Paket Internet</p>
-                                <p class="text-[10px] text-slate-400">Kuota Semua Operator</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Section Token PLN -->
-                <div class="mb-6 category-group" data-cat="token">
-                    <h3 class="font-bold text-slate-800 mb-3 text-sm flex items-center gap-2"><i class="fas fa-bolt text-amber-500"></i> Token Listrik PLN</h3>
-                    <div class="grid grid-cols-1">
-                        <div onclick="openCheckout('Token Listrik PLN', 'token', 'meter')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center"><i class="fas fa-bolt"></i></div>
-                            <div>
-                                <p class="text-xs font-bold text-slate-800">Token PLN Prabayar</p>
-                                <p class="text-[10px] text-slate-400">Masukkan No Meter / ID Pelanggan</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Section E-Wallet -->
-                <div class="mb-6 category-group" data-cat="ewallet">
-                    <h3 class="font-bold text-slate-800 mb-3 text-sm flex items-center gap-2"><i class="fas fa-wallet text-purple-500"></i> Top Up E-Wallet</h3>
-                    <div class="grid grid-cols-4 gap-2 text-center">
-                        <div onclick="openCheckout('GoPay', 'ewallet', 'phone')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500">
-                            <div class="text-green-500 text-lg mb-1"><i class="fas fa-circle-dollar-to-slot"></i></div>
-                            <p class="text-[10px] font-bold">GoPay</p>
-                        </div>
-                        <div onclick="openCheckout('DANA', 'ewallet', 'phone')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500">
-                            <div class="text-blue-500 text-lg mb-1"><i class="fas fa-wallet"></i></div>
-                            <p class="text-[10px] font-bold">DANA</p>
-                        </div>
-                        <div onclick="openCheckout('OVO', 'ewallet', 'phone')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500">
-                            <div class="text-purple-500 text-lg mb-1"><i class="fas fa-qrcode"></i></div>
-                            <p class="text-[10px] font-bold">OVO</p>
-                        </div>
-                        <div onclick="openCheckout('ShopeePay', 'ewallet', 'phone')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500">
-                            <div class="text-orange-500 text-lg mb-1"><i class="fas fa-bag-shopping"></i></div>
-                            <p class="text-[10px] font-bold">ShopeePay</p>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-
-        <!-- ================= VIEW 2: FORM CHECKOUT DETAIL ================= -->
-        <div id="viewCheckout" class="hidden fade-in">
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-4 flex items-center gap-3">
-                <div class="w-12 h-12 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xl"><i class="fas fa-cart-shopping" id="checkoutHeaderIcon"></i></div>
-                <div>
-                    <h2 id="checkoutTitle" class="font-bold text-slate-800 text-sm">Nama Produk</h2>
-                    <p class="text-[10px] text-emerald-600 font-medium"><i class="fas fa-check-circle"></i> Proses Otomatis via API</p>
-                </div>
-            </div>
-
             <form id="formCheckout">
-                <!-- Input Target (ID / No HP / No Meter) -->
-                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-4">
-                    <label id="inputLabelText" class="block text-xs font-bold text-slate-700 mb-2">Masukkan User ID / Nomor Tujuan</label>
-                    <input type="text" id="targetId" required placeholder="Contoh: 12345678" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-600">
+                <!-- Input Tujuan -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Masukkan Nomor HP / ID Tujuan</label>
+                    <input type="text" id="targetId" required placeholder="Contoh: 08123456789 atau ID Game" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                 </div>
 
-                <!-- Pilihan Nominal / Item -->
-                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-6">
-                    <label class="block text-xs font-bold text-slate-700 mb-2">Pilih Nominal Produk</label>
-                    <div class="grid grid-cols-2 gap-2" id="nominalOptions">
-                        <!-- Nanti otomatis diisi oleh Javascript berdasarkan produk -->
-                        <label class="border border-slate-200 p-2.5 rounded-lg cursor-pointer hover:border-blue-600 transition">
-                            <input type="radio" name="nominal" value="PROD_1" required class="mr-1.5">
-                            <span class="text-xs font-bold text-slate-800">Paket 1</span>
+                <!-- Pilihan Nominal -->
+                <div class="mb-5">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Pilih Nominal Produk</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="border rounded-lg p-3 flex flex-col cursor-pointer hover:border-blue-500 transition">
+                            <input type="radio" name="nominal" value="ml100" class="mb-1" required>
+                            <span class="text-sm font-semibold">Nominal 10.000</span>
+                            <span class="text-xs text-gray-500">Rp 10.000</span>
+                        </label>
+                        <label class="border rounded-lg p-3 flex flex-col cursor-pointer hover:border-blue-500 transition">
+                            <input type="radio" name="nominal" value="ml500" class="mb-1" required>
+                            <span class="text-sm font-semibold">Nominal 50.000</span>
+                            <span class="text-xs text-gray-500">Rp 50.000</span>
                         </label>
                     </div>
                 </div>
 
-                <button type="submit" id="btnPay" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-600/20 text-xs transition">
+                <!-- Tombol Submit -->
+                <button type="submit" id="btnPay" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition shadow-lg text-sm">
                     Lanjut Pembayaran (Midtrans)
                 </button>
             </form>
         </div>
-    </main>
 
-    <!-- Bottom Nav -->
-    <div class="fixed bottom-0 w-full bg-white border-t border-slate-200 z-40">
-        <div class="max-w-md mx-auto flex justify-around p-2 text-slate-400">
-            <button onclick="switchView('catalog')" class="flex flex-col items-center text-blue-600">
-                <i class="fas fa-house text-base"></i>
-                <span class="text-[9px] font-bold mt-0.5">Beranda</span>
-            </button>
-            <div class="flex flex-col items-center hover:text-blue-600 cursor-pointer">
-                <i class="fas fa-receipt text-base"></i>
-                <span class="text-[9px] font-bold mt-0.5">Cek Status</span>
-            </div>
-            <div class="flex flex-col items-center hover:text-blue-600 cursor-pointer">
-                <i class="fas fa-headset text-base"></i>
-                <span class="text-[9px] font-bold mt-0.5">Bantuan</span>
-            </div>
-        </div>
     </div>
 
-    <!-- Script Pengaturan Tampilan & Navigasi -->
+    <!-- Script Koneksi Frontend ke Backend Vercel & Midtrans Snap -->
     <script>
-        function switchView(view) {
-            if(view === 'catalog') {
-                document.getElementById('viewCatalog').classList.remove('hidden');
-                document.getElementById('viewCheckout').classList.add('hidden');
-                document.getElementById('btnBack').classList.add('hidden');
-                window.scrollTo(0,0);
-            }
+    document.getElementById('formCheckout').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const targetId = document.getElementById('targetId').value;
+        const selectedNomor = document.querySelector('input[name="nominal"]:checked');
+        const btnPay = document.getElementById('btnPay');
+
+        if (!selectedNomor) {
+            alert("Pilih nominal produk terlebih dahulu!");
+            return;
         }
 
-        function filterCategory(cat) {
-            const groups = document.querySelectorAll('.category-group');
-            groups.forEach(g => {
-                if(cat === 'all' || g.getAttribute('data-cat') === cat) {
-                    g.style.display = 'block';
-                } else {
-                    g.style.display = 'none';
-                }
+        const productCode = selectedNomor.value;
+        const originalText = btnPay.innerHTML;
+
+        btnPay.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Menyiapkan Pembayaran...';
+        btnPay.disabled = true;
+
+        try {
+            const response = await fetch('/api/create-transaction', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ targetId, productCode })
             });
-        }
 
-        function openCheckout(title, type, inputType) {
-            document.getElementById('viewCatalog').classList.add('hidden');
-            document.getElementById('viewCheckout').classList.remove('hidden');
-            document.getElementById('btnBack').classList.remove('hidden');
-            
-            document.getElementById('checkoutTitle').innerText = title;
-            
-            const label = document.getElementById('inputLabelText');
-            if(inputType === 'id') label.innerText = "Masukkan User ID / Zone ID";
-            else if(inputType === 'phone') label.innerText = "Masukkan Nomor HP / Akun Tujuan";
-            else if(inputType === 'meter') label.innerText = "Masukkan Nomor Meter / ID Pelanggan PLN";
+            const data = await response.json();
 
-            // Contoh variasi nominal dinamis berdasarkan jenis produk
-            const container = document.getElementById('nominalOptions');
-            if(type === 'game') {
-                container.innerHTML = `
-                    <label class="border border-slate-200 p-2.5 rounded-lg cursor-pointer hover:border-blue-600 flex flex-col"><input type="radio" name="nominal" value="G1" required><span class="text-xs font-bold text-slate-800 mt-1">100 Diamond</span><span class="text-[10px] text-blue-600">Rp 15.000</span></label>
-                    <label class="border border-slate-200 p-2.5 rounded-lg cursor-pointer hover:border-blue-600 flex flex-col"><input type="radio" name="nominal" value="G2" required><span class="text-xs font-bold text-slate-800 mt-1">300 Diamond</span><span class="text-[10px] text-blue-600">Rp 45.000</span></label>
-                `;
+            if (response.ok && data.token) {
+                // Munculkan popup pembayaran Midtrans Live Production
+                window.snap.pay(data.token, {
+                    onSuccess: function(result){ 
+                        alert("Pembayaran Berhasil! Pesanan sedang diproses otomatis ke Digiflazz."); 
+                        console.log(result); 
+                    },
+                    onPending: function(result){ 
+                        alert("Menunggu pembayaran Anda."); 
+                        console.log(result); 
+                    },
+                    onError: function(result){ 
+                        alert("Pembayaran Gagal!"); 
+                        console.log(result); 
+                    },
+                    onClose: function(){ 
+                        alert("Popup pembayaran ditutup."); 
+                    }
+                });
             } else {
-                container.innerHTML = `
-                    <label class="border border-slate-200 p-2.5 rounded-lg cursor-pointer hover:border-blue-600 flex flex-col"><input type="radio" name="nominal" value="P1" required><span class="text-xs font-bold text-slate-800 mt-1">Nominal 20.000</span><span class="text-[10px] text-blue-600">Rp 21.000</span></label>
-                    <label class="border border-slate-200 p-2.5 rounded-lg cursor-pointer hover:border-blue-600 flex flex-col"><input type="radio" name="nominal" value="P2" required><span class="text-xs font-bold text-slate-800 mt-1">Nominal 50.000</span><span class="text-[10px] text-blue-600">Rp 51.000</span></label>
-                `;
+                alert("Gagal: " + (data.message || 'Terjadi kesalahan sistem'));
             }
-            window.scrollTo(0,0);
+        } catch (error) {
+            console.error(error);
+            alert("Gagal terhubung ke server backend Vercel.");
+        } finally {
+            btnPay.innerHTML = originalText;
+            btnPay.disabled = false;
         }
-
-        document.getElementById('formCheckout').addEventListener('submit', function(e) {
-            e.preventDefault();
-            alert("Form terkirim! Hubungkan ke backend Vercel & Midtrans untuk memproses pembayaran otomatis.");
-        });
+    });
     </script>
 </body>
 </html>
