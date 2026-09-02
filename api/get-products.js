@@ -25,26 +25,26 @@ export default async function handler(req, res) {
         if (data.data) {
             let activeProducts = data.data.filter(item => item.seller_product_status === true);
 
-            // Ambil daftar brand berdasarkan kategori tombol yang diklik user
+            // Filter produk berdasarkan kategori tombol yang diklik di web
             if (action === 'get_brands') {
-                let catQuery = (category || "").toLowerCase();
+                let cat = (category || "").toLowerCase();
                 let matched = activeProducts.filter(item => {
                     let c = (item.category || "").toLowerCase();
-                    if (catQuery === 'pulsa') return c.includes('pulsa') || c.includes('data');
-                    if (catQuery === 'game') return c.includes('game');
-                    if (catQuery === 'token') return c.includes('pln');
-                    if (catQuery === 'ewallet') return c.includes('e-money') || c.includes('ewallet');
+                    if (cat === 'game') return c.includes('game');
+                    if (cat === 'pulsa') return c.includes('pulsa') || c.includes('data');
+                    if (cat === 'token') return c.includes('pln');
+                    if (cat === 'ewallet') return c.includes('e-money') || c.includes('ewallet');
                     return false;
                 });
                 let brands = [...new Set(matched.map(item => item.brand))].sort();
                 return res.status(200).json(brands);
             }
 
-            // Ambil produk spesifik dari brand yang dipilih
+            // Ambil list nominal produk berdasarkan brand yang dipilih
             let filtered = activeProducts.filter(item => (item.brand || "").toUpperCase() === (brand || "").toUpperCase());
             filtered.sort((a, b) => a.price - b.price);
 
-            const marginProfit = 1500; // Keuntungan bersih lu
+            const marginProfit = 1500; // Keuntungan bersih lu per transaksi
             const products = filtered.map(p => ({
                 sku: p.buyer_sku_code,
                 name: p.product_name,
