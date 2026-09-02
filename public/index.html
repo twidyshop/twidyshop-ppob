@@ -6,6 +6,7 @@
     <title>TWIDY SHOP - Pusat Top Up & PPOB Terlengkap</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- JANGAN LUPA GANTI CLIENT_KEY_KAMU -->
     <script src="https://app.midtrans.com/snap/snap.js" data-client-key="CLIENT_KEY_KAMU"></script>
     <style>
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -42,7 +43,7 @@
                 <i class="fas fa-bolt absolute -right-3 -bottom-4 text-7xl text-white/10"></i>
             </div>
 
-            <!-- Kategori Utama Sesuai Request -->
+            <!-- Kategori Utama -->
             <div class="grid grid-cols-4 gap-3 mb-6 text-center">
                 <div onclick="filterCategory('pulsa')" id="menu-pulsa" class="menu-cat bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition">
                     <div class="w-10 h-10 mx-auto rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mb-1.5"><i class="fas fa-mobile-screen-button"></i></div>
@@ -62,7 +63,7 @@
                 </div>
             </div>
 
-            <!-- Grid Produk Dinamis dengan Auto-Logo -->
+            <!-- Grid Produk Dinamis -->
             <div class="mb-6">
                 <div id="dynamicCatalogGrid" class="grid grid-cols-2 gap-3">
                     <div class="col-span-2 text-center text-xs text-slate-400 py-6"><i class="fas fa-spinner fa-spin mr-1"></i> Memuat produk...</div>
@@ -120,7 +121,6 @@
     </div>
 
     <script>
-        // Fungsi untuk narik logo otomatis berdasarkan nama brand
         function getBrandLogo(brandName) {
             const b = brandName.toUpperCase();
             if (b.includes('TELKOMSEL')) return 'https://upload.wikimedia.org/wikipedia/commons/9/9b/Telkomsel_2021.svg';
@@ -132,12 +132,12 @@
             if (b.includes('BY.U')) return 'https://upload.wikimedia.org/wikipedia/commons/9/94/By.U_logo.svg';
             if (b.includes('MOBILE LEGENDS')) return 'https://upload.wikimedia.org/wikipedia/commons/6/6f/Mobile_Legends_Bang_Bang_logo.png';
             if (b.includes('FREE FIRE')) return 'https://upload.wikimedia.org/wikipedia/commons/4/47/Free_Fire_Logo.png';
-            if (b.includes('GO PAY')) return 'https://upload.wikimedia.org/wikipedia/commons/8/86/Gopay_logo.svg';
+            if (b.includes('GO PAY') || b.includes('GOPAY')) return 'https://upload.wikimedia.org/wikipedia/commons/8/86/Gopay_logo.svg';
             if (b.includes('OVO')) return 'https://upload.wikimedia.org/wikipedia/commons/e/eb/Logo_ovo_purple.svg';
             if (b.includes('DANA')) return 'https://upload.wikimedia.org/wikipedia/commons/7/72/Logo_dana_blue.svg';
             if (b.includes('SHOPEE')) return 'https://upload.wikimedia.org/wikipedia/commons/f/fe/Shopee.svg';
             if (b.includes('PLN')) return 'https://upload.wikimedia.org/wikipedia/commons/9/9e/PLN_Logo.svg';
-            return null; // Fallback ke icon biasa kalau tidak ketemu
+            return null;
         }
 
         async function filterCategory(categoryName) {
@@ -154,9 +154,10 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: 'get_brands', category: categoryName })
                 });
+                
                 const brands = await res.json();
 
-                if (Array.isArray(brands) && brands.length > 0) {
+                if (res.ok && Array.isArray(brands) && brands.length > 0) {
                     container.innerHTML = brands.map(b => {
                         const logoUrl = getBrandLogo(b);
                         const iconHtml = logoUrl 
@@ -177,7 +178,7 @@
                     container.innerHTML = `<div class="col-span-2 text-center text-xs text-red-500 py-6">Tidak ada produk aktif di kategori ini.</div>`;
                 }
             } catch (e) {
-                container.innerHTML = `<div class="col-span-2 text-center text-xs text-red-500 py-6">Gagal memuat data.</div>`;
+                container.innerHTML = `<div class="col-span-2 text-center text-xs text-red-500 py-6">Koneksi gagal atau server error.</div>`;
             }
         }
 
@@ -197,7 +198,6 @@
             
             document.getElementById('checkoutTitle').innerText = brandName;
             
-            // Set logo di header checkout juga
             const logoContainer = document.getElementById('checkoutLogoContainer');
             const logoUrl = getBrandLogo(brandName);
             if (logoUrl) {
@@ -226,7 +226,7 @@
                 });
                 const products = await res.json();
 
-                if (products.length > 0) {
+                if (res.ok && Array.isArray(products) && products.length > 0) {
                     container.innerHTML = products.map(p => `
                         <label class="border border-slate-200 p-2.5 rounded-lg cursor-pointer hover:border-blue-600 flex flex-col">
                             <input type="radio" name="nominal" value="${p.sku}" data-price="${p.price}" required class="mb-1">
@@ -236,7 +236,7 @@
                     `).join('');
                     btnPay.disabled = false;
                 } else {
-                    container.innerHTML = `<div class="col-span-2 text-center text-xs text-red-500 font-bold py-6">Produk Kosong</div>`;
+                    container.innerHTML = `<div class="col-span-2 text-center text-xs text-red-500 font-bold py-6">Produk Kosong atau Gangguan</div>`;
                 }
             } catch (e) {
                 container.innerHTML = `<div class="col-span-2 text-center text-xs text-red-500 py-6">Gagal memuat produk.</div>`;
