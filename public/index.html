@@ -12,6 +12,10 @@
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .fade-in { animation: fadeIn 0.25s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Utility class untuk tab konten biar rapi */
+        .tab-content { display: none; }
+        .tab-content.active { display: grid; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans pb-24 selection:bg-blue-600 selection:text-white" onload="filterCategory('pulsa')">
@@ -30,7 +34,7 @@
 
     <main class="max-w-md mx-auto px-4 mt-4">
         
-        <!-- VIEW 1: KATALOG UTAMA -->
+        <!-- ================= VIEW 1: KATALOG UTAMA ================= -->
         <div id="viewCatalog" class="fade-in block">
             
             <div class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-5 text-white shadow-lg mb-5 relative overflow-hidden">
@@ -42,7 +46,7 @@
                 <i class="fas fa-bolt absolute -right-3 -bottom-4 text-7xl text-white/10"></i>
             </div>
 
-            <!-- Kategori Utama -->
+            <!-- Kategori Menu Atas -->
             <div class="grid grid-cols-4 gap-3 mb-6 text-center">
                 <div onclick="filterCategory('pulsa')" id="menu-pulsa" class="menu-cat bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition">
                     <div class="w-10 h-10 mx-auto rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mb-1.5"><i class="fas fa-mobile-screen-button"></i></div>
@@ -62,15 +66,94 @@
                 </div>
             </div>
 
-            <!-- Grid Produk Dinamis -->
-            <div class="mb-6">
-                <div id="dynamicCatalogGrid" class="grid grid-cols-2 gap-3">
-                    <div class="col-span-2 text-center text-xs text-slate-400 py-6"><i class="fas fa-spinner fa-spin mr-1"></i> Memuat produk...</div>
+            <!-- TAB KONTEN PULSA -->
+            <div id="grid-pulsa" class="tab-content grid-cols-2 gap-3 mb-6">
+                <!-- Telkomsel -->
+                <div onclick="openCheckout('TELKOMSEL', 'pulsa', 'https://upload.wikimedia.org/wikipedia/commons/9/9b/Telkomsel_2021.svg')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-slate-50 overflow-hidden"><img src="https://upload.wikimedia.org/wikipedia/commons/9/9b/Telkomsel_2021.svg" class="w-8 h-8 object-contain"></div>
+                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">Telkomsel</p><p class="text-[10px] text-slate-400">Pulsa / Data</p></div>
+                </div>
+                <!-- Indosat -->
+                <div onclick="openCheckout('INDOSAT', 'pulsa', 'https://upload.wikimedia.org/wikipedia/commons/1/15/Indosat_Ooredoo_Hutchison_logo.svg')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-slate-50 overflow-hidden"><img src="https://upload.wikimedia.org/wikipedia/commons/1/15/Indosat_Ooredoo_Hutchison_logo.svg" class="w-8 h-8 object-contain"></div>
+                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">Indosat</p><p class="text-[10px] text-slate-400">Pulsa / Data</p></div>
+                </div>
+                <!-- Axis -->
+                <div onclick="openCheckout('AXIS', 'pulsa', 'https://upload.wikimedia.org/wikipedia/commons/7/7b/Axis_Logo_2015.svg')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-slate-50 overflow-hidden"><img src="https://upload.wikimedia.org/wikipedia/commons/7/7b/Axis_Logo_2015.svg" class="w-8 h-8 object-contain"></div>
+                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">AXIS</p><p class="text-[10px] text-slate-400">Pulsa / Data</p></div>
+                </div>
+                <!-- Smartfren -->
+                <div onclick="openCheckout('SMARTFREN', 'pulsa', 'https://upload.wikimedia.org/wikipedia/commons/1/1a/Smartfren_2018.svg')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-slate-50 overflow-hidden"><img src="https://upload.wikimedia.org/wikipedia/commons/1/1a/Smartfren_2018.svg" class="w-10 h-5 object-contain"></div>
+                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">Smartfren</p><p class="text-[10px] text-slate-400">Pulsa / Data</p></div>
+                </div>
+                <!-- Tri -->
+                <div onclick="openCheckout('TRI', 'pulsa', 'https://upload.wikimedia.org/wikipedia/commons/3/3d/Tri_logo_%282021%29.svg')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-slate-50 overflow-hidden p-1"><img src="https://upload.wikimedia.org/wikipedia/commons/3/3d/Tri_logo_%282021%29.svg" class="w-full h-full object-contain"></div>
+                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">Tri</p><p class="text-[10px] text-slate-400">Pulsa / Data</p></div>
+                </div>
+                <!-- XL -->
+                <div onclick="openCheckout('XL', 'pulsa', 'https://upload.wikimedia.org/wikipedia/commons/e/ee/XL_Logo_2016.svg')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-slate-50 overflow-hidden"><img src="https://upload.wikimedia.org/wikipedia/commons/e/ee/XL_Logo_2016.svg" class="w-8 h-8 object-contain"></div>
+                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">XL</p><p class="text-[10px] text-slate-400">Pulsa / Data</p></div>
+                </div>
+                <!-- by.U -->
+                <div onclick="openCheckout('by.U', 'pulsa', 'https://upload.wikimedia.org/wikipedia/commons/9/94/By.U_logo.svg')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-slate-50 overflow-hidden p-1"><img src="https://upload.wikimedia.org/wikipedia/commons/9/94/By.U_logo.svg" class="w-full h-full object-contain"></div>
+                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">by.U</p><p class="text-[10px] text-slate-400">Pulsa / Data</p></div>
+                </div>
+            </div>
+
+            <!-- TAB KONTEN GAMES -->
+            <div id="grid-games" class="tab-content grid-cols-2 gap-3 mb-6">
+                <!-- Mobile Legends -->
+                <div onclick="openCheckout('MOBILE LEGENDS', 'games', 'https://upload.wikimedia.org/wikipedia/commons/6/6f/Mobile_Legends_Bang_Bang_logo.png')" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:border-blue-500 transition p-3 text-center">
+                    <div class="aspect-square rounded-lg bg-slate-900 flex items-center justify-center overflow-hidden mb-2 p-2"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6f/Mobile_Legends_Bang_Bang_logo.png" class="w-full h-full object-contain"></div>
+                    <p class="text-xs font-bold text-slate-700 truncate">Mobile Legends</p>
+                </div>
+                <!-- Free Fire -->
+                <div onclick="openCheckout('FREE FIRE', 'games', 'https://upload.wikimedia.org/wikipedia/commons/4/47/Free_Fire_Logo.png')" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:border-blue-500 transition p-3 text-center">
+                    <div class="aspect-square rounded-lg bg-slate-900 flex items-center justify-center overflow-hidden mb-2 p-2"><img src="https://upload.wikimedia.org/wikipedia/commons/4/47/Free_Fire_Logo.png" class="w-full h-full object-contain"></div>
+                    <p class="text-xs font-bold text-slate-700 truncate">Free Fire</p>
+                </div>
+            </div>
+
+            <!-- TAB KONTEN E-MONEY -->
+            <div id="grid-emoney" class="tab-content grid-cols-2 gap-3 mb-6">
+                <!-- Go Pay -->
+                <div onclick="openCheckout('GO PAY', 'emoney', 'https://upload.wikimedia.org/wikipedia/commons/8/86/Gopay_logo.svg')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-slate-50 overflow-hidden"><img src="https://upload.wikimedia.org/wikipedia/commons/8/86/Gopay_logo.svg" class="w-8 h-8 object-contain"></div>
+                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">GoPay</p></div>
+                </div>
+                <!-- OVO -->
+                <div onclick="openCheckout('OVO', 'emoney', 'https://upload.wikimedia.org/wikipedia/commons/e/eb/Logo_ovo_purple.svg')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-slate-50 overflow-hidden"><img src="https://upload.wikimedia.org/wikipedia/commons/e/eb/Logo_ovo_purple.svg" class="w-8 h-8 object-contain"></div>
+                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">OVO</p></div>
+                </div>
+                <!-- DANA -->
+                <div onclick="openCheckout('DANA', 'emoney', 'https://upload.wikimedia.org/wikipedia/commons/7/72/Logo_dana_blue.svg')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-slate-50 overflow-hidden"><img src="https://upload.wikimedia.org/wikipedia/commons/7/72/Logo_dana_blue.svg" class="w-8 h-8 object-contain"></div>
+                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">DANA</p></div>
+                </div>
+                <!-- Shopee Pay -->
+                <div onclick="openCheckout('SHOPEE PAY', 'emoney', 'https://upload.wikimedia.org/wikipedia/commons/f/fe/Shopee.svg')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-slate-50 overflow-hidden"><img src="https://upload.wikimedia.org/wikipedia/commons/f/fe/Shopee.svg" class="w-8 h-8 object-contain"></div>
+                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">Shopee Pay</p></div>
+                </div>
+            </div>
+
+            <!-- TAB KONTEN PLN -->
+            <div id="grid-pln" class="tab-content grid-cols-1 gap-3 mb-6">
+                <!-- PLN -->
+                <div onclick="openCheckout('PLN', 'pln', 'https://upload.wikimedia.org/wikipedia/commons/9/9e/PLN_Logo.svg')" class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-lg shrink-0 flex items-center justify-center bg-amber-50 overflow-hidden p-2"><img src="https://upload.wikimedia.org/wikipedia/commons/9/9e/PLN_Logo.svg" class="w-full h-full object-contain"></div>
+                    <div class="overflow-hidden"><p class="text-sm font-bold text-slate-800">Token PLN Prabayar</p><p class="text-xs text-slate-400 mt-0.5">Otomatis masuk 24 Jam</p></div>
                 </div>
             </div>
         </div>
 
-        <!-- VIEW 2: FORM CHECKOUT DETAIL -->
+        <!-- ================= VIEW 2: FORM CHECKOUT DETAIL ================= -->
         <div id="viewCheckout" class="hidden fade-in">
             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-4 flex items-center gap-3">
                 <div id="checkoutLogoContainer" class="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center text-xl overflow-hidden shrink-0">
@@ -85,12 +168,12 @@
             <form id="formCheckout">
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-4">
                     <label id="inputLabelText" class="block text-xs font-bold text-slate-700 mb-2">Masukkan User ID / Nomor Tujuan</label>
-                    <input type="text" id="targetId" required placeholder="Contoh: 12345678" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-600">
+                    <input type="text" id="targetId" required placeholder="Contoh: 08123456789" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-600">
                 </div>
 
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-6">
                     <label class="block text-xs font-bold text-slate-700 mb-2">Pilih Nominal Produk</label>
-                    <div class="grid grid-cols-2 gap-2 max-h-[300px] overflow-y-auto no-scrollbar" id="nominalOptions">
+                    <div class="grid grid-cols-2 gap-2 max-h-[350px] overflow-y-auto no-scrollbar" id="nominalOptions">
                     </div>
                 </div>
 
@@ -120,74 +203,17 @@
     </div>
 
     <script>
-        // Data logo wikipedia, rentan diblokir
-        function getBrandLogo(brandName) {
-            const b = brandName.toUpperCase();
-            if (b.includes('TELKOMSEL')) return 'https://upload.wikimedia.org/wikipedia/commons/9/9b/Telkomsel_2021.svg';
-            if (b.includes('INDOSAT')) return 'https://upload.wikimedia.org/wikipedia/commons/1/15/Indosat_Ooredoo_Hutchison_logo.svg';
-            if (b.includes('AXIS')) return 'https://upload.wikimedia.org/wikipedia/commons/7/7b/Axis_Logo_2015.svg';
-            if (b.includes('SMARTFREN')) return 'https://upload.wikimedia.org/wikipedia/commons/1/1a/Smartfren_2018.svg';
-            if (b.includes('TRI') || b.includes('3')) return 'https://upload.wikimedia.org/wikipedia/commons/3/3d/Tri_logo_%282021%29.svg';
-            if (b.includes('XL')) return 'https://upload.wikimedia.org/wikipedia/commons/e/ee/XL_Logo_2016.svg';
-            if (b.includes('BY.U')) return 'https://upload.wikimedia.org/wikipedia/commons/9/94/By.U_logo.svg';
-            if (b.includes('MOBILE LEGENDS')) return 'https://upload.wikimedia.org/wikipedia/commons/6/6f/Mobile_Legends_Bang_Bang_logo.png';
-            if (b.includes('FREE FIRE')) return 'https://upload.wikimedia.org/wikipedia/commons/4/47/Free_Fire_Logo.png';
-            if (b.includes('GO PAY') || b.includes('GOPAY')) return 'https://upload.wikimedia.org/wikipedia/commons/8/86/Gopay_logo.svg';
-            if (b.includes('OVO')) return 'https://upload.wikimedia.org/wikipedia/commons/e/eb/Logo_ovo_purple.svg';
-            if (b.includes('DANA')) return 'https://upload.wikimedia.org/wikipedia/commons/7/72/Logo_dana_blue.svg';
-            if (b.includes('SHOPEE')) return 'https://upload.wikimedia.org/wikipedia/commons/f/fe/Shopee.svg';
-            if (b.includes('PLN')) return 'https://upload.wikimedia.org/wikipedia/commons/9/9e/PLN_Logo.svg';
-            return null;
-        }
-
-        // URL Avatar fallback jika logo gagal dimuat (keren & selalu berhasil)
-        function getAvatarFallback(brandName) {
-            return `https://ui-avatars.com/api/?name=${encodeURIComponent(brandName)}&background=EBF8FF&color=2563EB&bold=true`;
-        }
-
-        async function filterCategory(categoryName) {
+        // Logika untuk ganti tab kategori
+        function filterCategory(categoryName) {
+            // Reset warna menu atas
             document.querySelectorAll('.menu-cat').forEach(el => el.classList.remove('bg-blue-50', 'border-blue-500'));
             const activeMenu = document.getElementById('menu-' + categoryName);
             if(activeMenu) activeMenu.classList.add('bg-blue-50', 'border-blue-500');
 
-            const container = document.getElementById('dynamicCatalogGrid');
-            container.innerHTML = `<div class="col-span-2 text-center text-xs text-slate-400 py-6"><i class="fas fa-spinner fa-spin mr-1"></i> Memuat produk...</div>`;
-
-            try {
-                const res = await fetch('/api/get-products', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'get_brands', category: categoryName })
-                });
-                
-                const brands = await res.json();
-
-                if (res.ok && Array.isArray(brands) && brands.length > 0) {
-                    container.innerHTML = brands.map(b => {
-                        const logoUrl = getBrandLogo(b);
-                        const fallbackUrl = getAvatarFallback(b);
-                        
-                        // onerror added di img: Kalau diblokir Wikipedia, pakai avatar inisial otomatis
-                        const iconHtml = logoUrl 
-                            ? `<img src="${logoUrl}" class="w-full h-full object-contain" alt="${b}" onerror="this.onerror=null; this.src='${fallbackUrl}';">` 
-                            : `<img src="${fallbackUrl}" class="w-full h-full object-contain rounded" alt="${b}">`;
-
-                        return `
-                            <div onclick="openCheckout('${b.replace(/'/g, "\\'")}', '${categoryName}')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center p-1.5 shrink-0">${iconHtml}</div>
-                                <div class="overflow-hidden">
-                                    <p class="text-xs font-bold text-slate-800 truncate">${b}</p>
-                                    <p class="text-[10px] text-slate-400">Otomatis 24 Jam</p>
-                                </div>
-                            </div>
-                        `;
-                    }).join('');
-                } else {
-                    container.innerHTML = `<div class="col-span-2 text-center text-xs text-red-500 py-6">Tidak ada produk aktif di kategori ini.</div>`;
-                }
-            } catch (e) {
-                container.innerHTML = `<div class="col-span-2 text-center text-xs text-red-500 py-6">Koneksi gagal atau server error.</div>`;
-            }
+            // Sembunyikan semua grid produk, lalu tampilkan yang sesuai
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            const activeGrid = document.getElementById('grid-' + categoryName);
+            if(activeGrid) activeGrid.classList.add('active');
         }
 
         function switchView(view) {
@@ -199,41 +225,52 @@
             }
         }
 
-        async function openCheckout(brandName, categoryType) {
+        // Logika untuk nampilin form checkout dan ngambil harga nominal dari API
+        async function openCheckout(brandName, categoryType, logoUrl) {
             document.getElementById('viewCatalog').classList.add('hidden');
             document.getElementById('viewCheckout').classList.remove('hidden');
             document.getElementById('btnBack').classList.remove('hidden');
             
             document.getElementById('checkoutTitle').innerText = brandName;
             
+            // Set gambar logo di halaman checkout
             const logoContainer = document.getElementById('checkoutLogoContainer');
-            const logoUrl = getBrandLogo(brandName);
-            const fallbackUrl = getAvatarFallback(brandName);
-
             if (logoUrl) {
-                logoContainer.innerHTML = `<img src="${logoUrl}" class="w-full h-full object-contain bg-transparent rounded" alt="${brandName}" onerror="this.onerror=null; this.src='${fallbackUrl}';">`;
+                logoContainer.innerHTML = `<img src="${logoUrl}" class="w-full h-full object-contain p-1" alt="${brandName}">`;
             } else {
-                logoContainer.innerHTML = `<img src="${fallbackUrl}" class="w-full h-full object-contain rounded" alt="${brandName}">`;
+                logoContainer.innerHTML = `<i class="fas fa-bolt text-slate-400"></i>`;
             }
             
+            // Atur teks label input target sesuai kategori
             const label = document.getElementById('inputLabelText');
-            if(categoryType === 'games') label.innerText = "Masukkan User ID / Zone ID";
-            else if(categoryType === 'pln') label.innerText = "Masukkan Nomor Meter / ID Pelanggan PLN";
-            else label.innerText = "Masukkan Nomor HP / Akun Tujuan";
+            const targetInput = document.getElementById('targetId');
+            if(categoryType === 'games') {
+                label.innerText = "Masukkan User ID / Zone ID";
+                targetInput.placeholder = "Contoh: 12345678 (1234)";
+            } else if(categoryType === 'pln') {
+                label.innerText = "Masukkan Nomor Meter / ID Pelanggan PLN";
+                targetInput.placeholder = "Contoh: 14123456789";
+            } else {
+                label.innerText = "Masukkan Nomor HP / Akun Tujuan";
+                targetInput.placeholder = "Contoh: 08123456789";
+            }
 
             const container = document.getElementById('nominalOptions');
             const btnPay = document.getElementById('btnPay');
             btnPay.disabled = true;
 
-            container.innerHTML = `<div class="col-span-2 text-center text-xs text-slate-500 py-6"><i class="fas fa-spinner fa-spin mr-2 text-lg"></i> Mengambil nominal...</div>`;
+            // Loading state pas lagi narik harga dari server Digiflazz
+            container.innerHTML = `<div class="col-span-2 text-center text-xs text-slate-500 py-6"><i class="fas fa-spinner fa-spin mr-2 text-lg"></i> Mengambil data dari server...</div>`;
             window.scrollTo(0,0);
 
             try {
+                // Tembak API Digiflazz khusus untuk brand ini aja
                 const res = await fetch('/api/get-products', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'get_products', brand: brandName })
+                    body: JSON.stringify({ brand: brandName })
                 });
+                
                 const products = await res.json();
 
                 if (res.ok && Array.isArray(products) && products.length > 0) {
@@ -246,13 +283,14 @@
                     `).join('');
                     btnPay.disabled = false;
                 } else {
-                    container.innerHTML = `<div class="col-span-2 text-center text-xs text-red-500 font-bold py-6">Produk Kosong atau Gangguan</div>`;
+                    container.innerHTML = `<div class="col-span-2 text-center text-xs text-red-500 font-bold py-6">Produk sedang gangguan / kosong dari pusat.</div>`;
                 }
             } catch (e) {
-                container.innerHTML = `<div class="col-span-2 text-center text-xs text-red-500 py-6">Gagal memuat produk.</div>`;
+                container.innerHTML = `<div class="col-span-2 text-center text-xs text-red-500 py-6">Koneksi gagal atau server error.</div>`;
             }
         }
 
+        // Proses Submit Transaksi Midtrans
         document.getElementById('formCheckout').addEventListener('submit', async function(e) {
             e.preventDefault();
             
