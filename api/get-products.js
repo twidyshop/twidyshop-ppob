@@ -3,7 +3,7 @@ const crypto = require('crypto');
 export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
 
-    const { brand } = req.body; 
+    const { action, brand } = req.body; 
     const username = process.env.DIGIFLAZZ_USERNAME;
     const apiKey = process.env.DIGIFLAZZ_API_KEY;
 
@@ -27,23 +27,31 @@ export default async function handler(req, res) {
         const data = await digiflazzResponse.json();
         
         if (data.data) {
-            const searchKeyword = brand.toUpperCase();
+            // FITUR 1: Kalau diminta 'get_brands', kirim daftar semua brand/operator pulsa yang aktif ke web
+            if (action === 'get_brands') {
+                let activeProducts = data.data.filter(item => item.seller_product_status === true);
+                
+                // Ambil daftar brand unik khusus kategori Pulsa
+                let pulsaBrands = [...new Set(activeProducts
+                    .filter(item => item.category.toLowerCase().includes('pulsa') || item.brand.toLowerCase().includes('telkomsel') || item.brand.toLowerCase().includes('indosat') || item.brand.toLowerCase().includes('axis') || item.brand.toLowerCase().includes('xl') || item.brand.toLowerCase().includes('tri') || item.brand.toLowerCase().includes('smartfren'))
+                    .map(item => item.brand))]
+                    .sort();
 
-            // Filter fleksibel: Mencocokkan brand atau nama produk yang mengandung kata kunci
+                return res.status(200).json(pulsaBrands);
+            }
+
+            // FITUR 2: Kalau user klik salah satu brand, ambil produk spesifiknya + margin profit
+            const searchKeyword = (brand || "").toUpperCase();
             let filtered = data.data.filter(item => {
                 const itemBrand = (item.brand || "").toUpperCase();
                 const itemName = (item.product_name || "").toUpperCase();
-                
-                // Khusus Pulsa, pastikan mencocokkan operatornya
                 return (itemBrand.includes(searchKeyword) || itemName.includes(searchKeyword)) && 
                        item.seller_product_status === true;
             });
 
-            // Urutkan dari harga termurah
             filtered.sort((a, b) => a.price - b.price);
 
-            // Atur margin keuntungan bersih kamu di sini (Contoh: Rp 1.500)
-            const marginProfit = 1500; 
+            const marginProfit = 1500; // Atur keuntungan bersih lu di sini
             
             const products = filtered.map(p => ({
                 sku: p.buyer_sku_code,
