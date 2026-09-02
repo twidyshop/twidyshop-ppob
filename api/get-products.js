@@ -3,7 +3,7 @@ const crypto = require('crypto');
 export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
 
-    const { brand } = req.body; // Sekarang cuma butuh nama brand aja
+    const { brand } = req.body; 
     const username = process.env.DIGIFLAZZ_USERNAME;
     const apiKey = process.env.DIGIFLAZZ_API_KEY;
 
@@ -23,14 +23,23 @@ export default async function handler(req, res) {
         const data = await digiflazzResponse.json();
         
         if (data.data && Array.isArray(data.data)) {
-            // Ambil semua produk aktif
-            let activeProducts = data.data.filter(item => item.seller_product_status === true || item.buyer_product_status === true);
+            // Kita pastikan namanya bersih dari spasi berlebih dan huruf disamakan semua
+            let targetBrand = (brand || "").trim().toUpperCase();
 
-            // Langsung filter berdasarkan brand yang diklik di web
-            let filtered = activeProducts.filter(item => (item.brand || "").toUpperCase() === (brand || "").toUpperCase());
+            // Filter produk yang aktif DAN namanya cocok/mengandung kata kunci
+            let filtered = data.data.filter(item => {
+                let isActive = item.seller_product_status === true || item.seller_product_status === 1;
+                if (!isActive) return false;
+
+                let itemBrand = (item.brand || "").trim().toUpperCase();
+                return itemBrand === targetBrand || itemBrand.includes(targetBrand);
+            });
+
+            // Urutkan dari termurah ke termahal
             filtered.sort((a, b) => a.price - b.price);
 
             const marginProfit = 1500; // Untung per transaksi lu
+            
             const products = filtered.map(p => ({
                 sku: p.buyer_sku_code,
                 name: p.product_name,
