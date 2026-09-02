@@ -1,0 +1,8 @@
+{
+  "name": "twidy-shop",
+  "version": "1.0.0",
+  "dependencies": {
+    "midtrans-client": "^1.4.2",
+    "md5": "^2.3.0"
+  }
+}
