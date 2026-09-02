@@ -3,7 +3,7 @@ const crypto = require('crypto');
 export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
 
-    const { brand } = req.body; 
+    const { brand, category } = req.body; 
     const username = process.env.DIGIFLAZZ_USERNAME;
     const apiKey = process.env.DIGIFLAZZ_API_KEY;
 
@@ -23,22 +23,39 @@ export default async function handler(req, res) {
         const data = await digiflazzResponse.json();
         
         if (data.data && Array.isArray(data.data)) {
-            // Kita pastikan namanya bersih dari spasi berlebih dan huruf disamakan semua
             let targetBrand = (brand || "").trim().toUpperCase();
 
-            // Filter produk yang aktif DAN namanya cocok/mengandung kata kunci
+            // Filter produk aktif dari pusat
             let filtered = data.data.filter(item => {
-                let isActive = item.seller_product_status === true || item.seller_product_status === 1;
+                let isActive = item.seller_product_status === true || item.buyer_product_status === true || item.seller_product_status === 1;
                 if (!isActive) return false;
 
                 let itemBrand = (item.brand || "").trim().toUpperCase();
-                return itemBrand === targetBrand || itemBrand.includes(targetBrand);
+                let isBrandMatch = itemBrand === targetBrand || itemBrand.includes(targetBrand);
+
+                if (!isBrandMatch) return false;
+
+                // KHUSUS KATEGORI PULSA: Saring ketat agar HANYA mengambil pulsa reguler
+                if (category === 'pulsa') {
+                    let productName = (item.product_name || "").toUpperCase();
+                    // Pastikan mengandung nama brand DAN ada kata pulsa, tapi TIDAK mengandung kata data/internet/telpon/voucher
+                    let isPulsaReguler = productName.includes(targetBrand) && 
+                                         (productName.includes('PULSA') || !productName.includes('DATA')) &&
+                                         !productName.includes('INTERNET') && 
+                                         !productName.includes('DATA') && 
+                                         !productName.includes('TELPON') && 
+                                         !productName.includes('VOUCHER') &&
+                                         !productName.includes('PAKET');
+                    return isPulsaReguler;
+                }
+
+                return true;
             });
 
-            // Urutkan dari termurah ke termahal
+            // Urutkan dari harga termurah
             filtered.sort((a, b) => a.price - b.price);
 
-            const marginProfit = 1500; // Untung per transaksi lu
+            const marginProfit = 1500; // Keuntungan bersih lu per transaksi
             
             const products = filtered.map(p => ({
                 sku: p.buyer_sku_code,
