@@ -10,10 +10,10 @@ export default async function handler(req, res) {
         const transactionStatus = notification.transaction_status;
         const fraudStatus = notification.fraud_status;
 
-        // Cek apakah status pembayaran sukses (settlement / capture)
+        // Cek kalau pembayaran sukses
         if (transactionStatus === 'settlement' || (transactionStatus === 'capture' && fraudStatus === 'accept')) {
             const orderId = notification.order_id;
-            const targetId = notification.customer_last_name; // Mengambil target ID yang disimpan di last_name
+            const targetId = notification.customer_last_name; 
             const buyerSkuCode = notification.item_details && notification.item_details[0] ? notification.item_details[0].id : 'test';
 
             const username = process.env.DIGIFLAZZ_USERNAME;
@@ -23,11 +23,10 @@ export default async function handler(req, res) {
                 return res.status(500).json({ message: 'Kredensial Digiflazz belum lengkap di Environment Variables Vercel!' });
             }
 
-            // Buat signature MD5 pakai crypto bawaan Node.js
             const refId = orderId;
             const sign = crypto.createHash('md5').update(username + apiKey + refId).digest('hex');
 
-            // Tembak API Transaksi Digiflazz
+            // ENDPOINT DIGIFLAZZ PRODUCTION
             const digiflazzResponse = await fetch('https://api.digiflazz.com/v1/transaction', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
