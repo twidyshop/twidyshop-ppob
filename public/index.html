@@ -6,7 +6,6 @@
     <title>TWIDY SHOP - Pusat Top Up & PPOB Terlengkap</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <!-- JANGAN LUPA GANTI CLIENT_KEY_KAMU -->
     <script src="https://app.midtrans.com/snap/snap.js" data-client-key="CLIENT_KEY_KAMU"></script>
     <style>
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -74,7 +73,7 @@
         <!-- VIEW 2: FORM CHECKOUT DETAIL -->
         <div id="viewCheckout" class="hidden fade-in">
             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-4 flex items-center gap-3">
-                <div id="checkoutLogoContainer" class="w-12 h-12 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xl overflow-hidden p-1">
+                <div id="checkoutLogoContainer" class="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center text-xl overflow-hidden shrink-0">
                     <i class="fas fa-cart-shopping"></i>
                 </div>
                 <div>
@@ -121,6 +120,7 @@
     </div>
 
     <script>
+        // Data logo wikipedia, rentan diblokir
         function getBrandLogo(brandName) {
             const b = brandName.toUpperCase();
             if (b.includes('TELKOMSEL')) return 'https://upload.wikimedia.org/wikipedia/commons/9/9b/Telkomsel_2021.svg';
@@ -138,6 +138,11 @@
             if (b.includes('SHOPEE')) return 'https://upload.wikimedia.org/wikipedia/commons/f/fe/Shopee.svg';
             if (b.includes('PLN')) return 'https://upload.wikimedia.org/wikipedia/commons/9/9e/PLN_Logo.svg';
             return null;
+        }
+
+        // URL Avatar fallback jika logo gagal dimuat (keren & selalu berhasil)
+        function getAvatarFallback(brandName) {
+            return `https://ui-avatars.com/api/?name=${encodeURIComponent(brandName)}&background=EBF8FF&color=2563EB&bold=true`;
         }
 
         async function filterCategory(categoryName) {
@@ -160,12 +165,15 @@
                 if (res.ok && Array.isArray(brands) && brands.length > 0) {
                     container.innerHTML = brands.map(b => {
                         const logoUrl = getBrandLogo(b);
+                        const fallbackUrl = getAvatarFallback(b);
+                        
+                        // onerror added di img: Kalau diblokir Wikipedia, pakai avatar inisial otomatis
                         const iconHtml = logoUrl 
-                            ? `<img src="${logoUrl}" class="w-full h-full object-contain" alt="${b}">` 
-                            : `<i class="fas fa-bolt text-blue-600"></i>`;
+                            ? `<img src="${logoUrl}" class="w-full h-full object-contain" alt="${b}" onerror="this.onerror=null; this.src='${fallbackUrl}';">` 
+                            : `<img src="${fallbackUrl}" class="w-full h-full object-contain rounded" alt="${b}">`;
 
                         return `
-                            <div onclick="openCheckout('${b}', '${categoryName}')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                            <div onclick="openCheckout('${b.replace(/'/g, "\\'")}', '${categoryName}')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
                                 <div class="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center p-1.5 shrink-0">${iconHtml}</div>
                                 <div class="overflow-hidden">
                                     <p class="text-xs font-bold text-slate-800 truncate">${b}</p>
@@ -200,10 +208,12 @@
             
             const logoContainer = document.getElementById('checkoutLogoContainer');
             const logoUrl = getBrandLogo(brandName);
+            const fallbackUrl = getAvatarFallback(brandName);
+
             if (logoUrl) {
-                logoContainer.innerHTML = `<img src="${logoUrl}" class="w-full h-full object-contain bg-white rounded" alt="${brandName}">`;
+                logoContainer.innerHTML = `<img src="${logoUrl}" class="w-full h-full object-contain bg-transparent rounded" alt="${brandName}" onerror="this.onerror=null; this.src='${fallbackUrl}';">`;
             } else {
-                logoContainer.innerHTML = `<i class="fas fa-cart-shopping"></i>`;
+                logoContainer.innerHTML = `<img src="${fallbackUrl}" class="w-full h-full object-contain rounded" alt="${brandName}">`;
             }
             
             const label = document.getElementById('inputLabelText');
