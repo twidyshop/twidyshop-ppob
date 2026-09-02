@@ -1,28 +1,33 @@
-const md5 = require('md5');
+const crypto = require('crypto');
 
 export default async function handler(req, res) {
-    if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
+    if (req.method !== 'POST') {
+        return res.status(405).json({ message: 'Method not allowed' });
+    }
 
-    const notification = req.body;
+    try {
+        const notification = req.body;
+        const transactionStatus = notification.transaction_status;
+        const fraudStatus = notification.fraud_status;
 
-    // Pastikan status pembayaran dari Midtrans benar-benar sukses/settlement
-    if (notification.transaction_status === 'settlement' || notification.transaction_status === 'capture') {
-        const orderId = notification.order_id;
-        
-        // Ambil data tujuan (nomor HP/ID game) dan kode SKU Digiflazz 
-        // (Catatan: Idealnya disimpan ke database saat create-transaction, tapi untuk simpelnya bisa diurai dari kustom order_id atau mapping)
-        const targetId = notification.customer_last_name; 
-        const buyerSkuCode = "DIKODE_DARI_DATABASE_ATAU_MAPPING"; // Sesuaikan dengan SKU Digiflazz kamu
+        // Cek apakah status pembayaran sukses (settlement / capture)
+        if (transactionStatus === 'settlement' || (transactionStatus === 'capture' && fraudStatus === 'accept')) {
+            const orderId = notification.order_id;
+            const targetId = notification.customer_last_name; // Mengambil target ID yang disimpan di last_name
+            const buyerSkuCode = notification.item_details && notification.item_details[0] ? notification.item_details[0].id : 'test';
 
-        const username = process.env.DIGIFLAZZ_USERNAME;
-        const apiKey = process.env.DIGIFLAZZ_API_KEY;
-        
-        // Format Signature Digiflazz: username + api_key + ref_id
-        const refId = orderId;
-        const sign = md5(username + apiKey + refId);
+            const username = process.env.DIGIFLAZZ_USERNAME;
+            const apiKey = process.env.DIGIFLAZZ_API_KEY;
 
-        // Kirim HTTP POST ke Server Digiflazz
-        try {
+            if (!username || !apiKey) {
+                return res.status(500).json({ message: 'Kredensial Digiflazz belum lengkap di Environment Variables Vercel!' });
+            }
+
+            // Buat signature MD5 pakai crypto bawaan Node.js
+            const refId = orderId;
+            const sign = crypto.createHash('md5').update(username + apiKey + refId).digest('hex');
+
+            // Tembak API Transaksi Digiflazz
             const digiflazzResponse = await fetch('https://api.digiflazz.com/v1/transaction', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -35,14 +40,17 @@ export default async function handler(req, res) {
                 })
             });
 
-            const result = await digiflazzResponse.json();
-            
-            // Cek respon dari Digiflazz
-            return res.status(200).json({ status: "Success processed to digiflazz", data: result });
-        } catch (error) {
-            return res.status(500).json({ message: "Gagal menembak API Digiflazz: " + error.message });
-        }
-    }
+            const digiflazzResult = await digiflazzResponse.json();
 
-    return res.status(200).json({ message: "Notification ignored (not settlement)" });
+            return res.status(200).json({
+                status: "Success processed to Digiflazz",
+                digiflazz_response: digiflazzResult
+            });
+        }
+
+        return res.status(200).json({ message: "Notification received but not settlement yet." });
+
+    } catch (error) {
+        return res.status(500).json({ message: 'Webhook processing error: ' + error.message });
+    }
 }
