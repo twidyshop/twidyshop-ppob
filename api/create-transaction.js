@@ -1,5 +1,3 @@
-const crypto = require('crypto');
-
 export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -19,14 +17,15 @@ export default async function handler(req, res) {
     }
 
     try {
-        const { targetId, productCode } = req.body;
+        // Sekarang kita ambil data productCode dan price (harga dinamis)
+        const { targetId, productCode, price } = req.body;
 
-        if (!targetId || !productCode) {
-            return res.status(400).json({ message: 'Target ID dan Product Code wajib diisi!' });
+        if (!targetId || !productCode || !price) {
+            return res.status(400).json({ message: 'Target ID, Produk, dan Harga wajib diisi!' });
         }
 
         const orderId = 'TWIDY-' + Date.now();
-        const amount = 10000; // Harga produk lu
+        const amount = parseInt(price); // Harga dinamis sesuai Digiflazz + Keuntungan lu
 
         const midtransServerKey = process.env.MIDTRANS_SERVER_KEY;
         if (!midtransServerKey) {
@@ -35,7 +34,6 @@ export default async function handler(req, res) {
 
         const authString = Buffer.from(midtransServerKey + ':').toString('base64');
 
-        // URL SNAP MIDTRANS PRODUCTION
         const midtransResponse = await fetch('https://app.midtrans.com/snap/v1/transactions', {
             method: 'POST',
             headers: {
@@ -63,7 +61,6 @@ export default async function handler(req, res) {
 
         const midtransData = await midtransResponse.json();
 
-        // Kalau ditolak, kita kirim detail error aslinya ke index.html
         if (!midtransResponse.ok) {
             return res.status(400).json({ message: 'Gagal membuat transaksi Midtrans', error: midtransData });
         }
