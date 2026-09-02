@@ -14,7 +14,7 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 font-sans pb-24 selection:bg-blue-600 selection:text-white" onload="loadBrands()">
+<body class="bg-slate-50 text-slate-800 font-sans pb-24 selection:bg-blue-600 selection:text-white" onload="selectCategory('pulsa')">
 
     <header class="bg-blue-600 text-white sticky top-0 z-50 shadow-md">
         <div class="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
@@ -41,11 +41,30 @@
                 <i class="fas fa-bolt absolute -right-3 -bottom-4 text-7xl text-white/10"></i>
             </div>
 
+            <!-- Kategori Pilihan -->
+            <div class="grid grid-cols-4 gap-3 mb-5 text-center">
+                <div onclick="selectCategory('game')" id="cat-game" class="cat-btn bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition">
+                    <div class="w-10 h-10 mx-auto rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center mb-1.5"><i class="fas fa-gamepad"></i></div>
+                    <span class="text-[10px] font-bold text-slate-700">Games</span>
+                </div>
+                <div onclick="selectCategory('pulsa')" id="cat-pulsa" class="cat-btn bg-blue-50 border-blue-500 p-3 rounded-xl border shadow-sm cursor-pointer transition">
+                    <div class="w-10 h-10 mx-auto rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mb-1.5"><i class="fas fa-mobile-screen-button"></i></div>
+                    <span class="text-[10px] font-bold text-slate-700">Pulsa</span>
+                </div>
+                <div onclick="selectCategory('token')" id="cat-token" class="cat-btn bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition">
+                    <div class="w-10 h-10 mx-auto rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center mb-1.5"><i class="fas fa-lightbulb"></i></div>
+                    <span class="text-[10px] font-bold text-slate-700">Token</span>
+                </div>
+                <div onclick="selectCategory('ewallet')" id="cat-ewallet" class="cat-btn bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition">
+                    <div class="w-10 h-10 mx-auto rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center mb-1.5"><i class="fas fa-wallet"></i></div>
+                    <span class="text-[10px] font-bold text-slate-700">E-Wallet</span>
+                </div>
+            </div>
+
+            <!-- List Brand Dinamis Berdasarkan Kategori -->
             <div class="mb-6">
-                <h3 class="font-bold text-slate-800 mb-3 text-sm flex items-center gap-2"><i class="fas fa-layer-group text-blue-500"></i> Daftar Produk Digiflazz</h3>
-                <!-- Tempat semua brand/produk dari akun Digiflazz muncul otomatis -->
-                <div id="dynamicBrandContainer" class="grid grid-cols-2 gap-3">
-                    <div class="col-span-2 text-center text-xs text-slate-400 py-6"><i class="fas fa-spinner fa-spin mr-1"></i> Menyinkronkan produk dari akun Digiflazz...</div>
+                <div id="brandContainer" class="grid grid-cols-2 gap-3">
+                    <div class="col-span-2 text-center text-xs text-slate-400 py-6"><i class="fas fa-spinner fa-spin mr-1"></i> Memuat produk...</div>
                 </div>
             </div>
         </div>
@@ -98,19 +117,26 @@
     </div>
 
     <script>
-        async function loadBrands() {
+        async function selectCategory(categoryName) {
+            // Ubah warna tombol kategori aktif
+            document.querySelectorAll('.cat-btn').forEach(btn => btn.classList.remove('bg-blue-50', 'border-blue-500'));
+            const activeBtn = document.getElementById('cat-' + categoryName);
+            if(activeBtn) activeBtn.classList.add('bg-blue-50', 'border-blue-500');
+
+            const container = document.getElementById('brandContainer');
+            container.innerHTML = `<div class="col-span-2 text-center text-xs text-slate-400 py-6"><i class="fas fa-spinner fa-spin mr-1"></i> Memuat produk...</div>`;
+
             try {
                 const res = await fetch('/api/get-products', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'get_all_brands' })
+                    body: JSON.stringify({ action: 'get_brands', category: categoryName })
                 });
                 const brands = await res.json();
-                const container = document.getElementById('dynamicBrandContainer');
 
                 if (Array.isArray(brands) && brands.length > 0) {
                     container.innerHTML = brands.map(b => `
-                        <div onclick="openCheckout('${b}', '${b}')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                        <div onclick="openCheckout('${b}', '${categoryName}')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
                             <div class="w-10 h-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center"><i class="fas fa-bolt"></i></div>
                             <div>
                                 <p class="text-xs font-bold text-slate-800 truncate">${b}</p>
@@ -119,10 +145,10 @@
                         </div>
                     `).join('');
                 } else {
-                    container.innerHTML = `<div class="col-span-2 text-center text-xs text-red-500">Tidak ada produk aktif di Digiflazz.</div>`;
+                    container.innerHTML = `<div class="col-span-2 text-center text-xs text-red-500 py-4">Tidak ada produk di kategori ini.</div>`;
                 }
             } catch (e) {
-                console.error(e);
+                container.innerHTML = `<div class="col-span-2 text-center text-xs text-red-500 py-4">Gagal memuat data.</div>`;
             }
         }
 
@@ -135,13 +161,18 @@
             }
         }
 
-        async function openCheckout(title, brandName) {
+        async function openCheckout(brandName, categoryType) {
             document.getElementById('viewCatalog').classList.add('hidden');
             document.getElementById('viewCheckout').classList.remove('hidden');
             document.getElementById('btnBack').classList.remove('hidden');
             
-            document.getElementById('checkoutTitle').innerText = title;
+            document.getElementById('checkoutTitle').innerText = brandName;
             
+            const label = document.getElementById('inputLabelText');
+            if(categoryType === 'game') label.innerText = "Masukkan User ID / Zone ID";
+            else if(categoryType === 'token') label.innerText = "Masukkan Nomor Meter / ID Pelanggan PLN";
+            else label.innerText = "Masukkan Nomor HP / Akun Tujuan";
+
             const container = document.getElementById('nominalOptions');
             const btnPay = document.getElementById('btnPay');
             btnPay.disabled = true;
