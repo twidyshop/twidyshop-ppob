@@ -25,22 +25,22 @@ export default async function handler(req, res) {
         if (data.data) {
             let activeProducts = data.data.filter(item => item.seller_product_status === true);
 
-            // Filter produk berdasarkan kategori tombol yang diklik di web
+            // Filter brand sesuai kategori yang dipilih
             if (action === 'get_brands') {
                 let cat = (category || "").toLowerCase();
                 let matched = activeProducts.filter(item => {
                     let c = (item.category || "").toLowerCase();
-                    if (cat === 'game') return c.includes('game');
                     if (cat === 'pulsa') return c.includes('pulsa') || c.includes('data');
-                    if (cat === 'token') return c.includes('pln');
-                    if (cat === 'ewallet') return c.includes('e-money') || c.includes('ewallet');
+                    if (cat === 'games') return c.includes('game');
+                    if (cat === 'pln') return c.includes('pln');
+                    if (cat === 'emoney') return c.includes('e-money') || c.includes('ewallet');
                     return false;
                 });
                 let brands = [...new Set(matched.map(item => item.brand))].sort();
                 return res.status(200).json(brands);
             }
 
-            // Ambil list nominal produk berdasarkan brand yang dipilih
+            // Ambil nominal produk berdasarkan brand persis
             let filtered = activeProducts.filter(item => (item.brand || "").toUpperCase() === (brand || "").toUpperCase());
             filtered.sort((a, b) => a.price - b.price);
 
