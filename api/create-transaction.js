@@ -1,7 +1,6 @@
 const crypto = require('crypto');
 
 export default async function handler(req, res) {
-    // CORS headers agar bisa diakses dari frontend web kamu
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -27,9 +26,8 @@ export default async function handler(req, res) {
         }
 
         const orderId = 'TWIDY-' + Date.now();
-        const amount = 10000; // Sesuaikan harga produk kamu (contoh: 10000)
+        const amount = 10000; // Harga produk lu
 
-        // Konfigurasi Midtrans Server Key dari Environment Variables Vercel
         const midtransServerKey = process.env.MIDTRANS_SERVER_KEY;
         if (!midtransServerKey) {
             return res.status(500).json({ message: 'MIDTRANS_SERVER_KEY belum diset di Vercel!' });
@@ -37,8 +35,8 @@ export default async function handler(req, res) {
 
         const authString = Buffer.from(midtransServerKey + ':').toString('base64');
 
-        // Request token SNAP ke Midtrans
-        const midtransResponse = await fetch('https://app.sandbox.midtrans.com/snap/v1/transactions', {
+        // URL SNAP MIDTRANS PRODUCTION
+        const midtransResponse = await fetch('https://app.midtrans.com/snap/v1/transactions', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -52,7 +50,7 @@ export default async function handler(req, res) {
                 },
                 customer_details: {
                     first_name: "Customer",
-                    last_name: targetId // Kita simpan targetID/No HP di sini agar terbaca di webhook
+                    last_name: targetId 
                 },
                 item_details: [{
                     id: productCode,
@@ -65,6 +63,7 @@ export default async function handler(req, res) {
 
         const midtransData = await midtransResponse.json();
 
+        // Kalau ditolak, kita kirim detail error aslinya ke index.html
         if (!midtransResponse.ok) {
             return res.status(400).json({ message: 'Gagal membuat transaksi Midtrans', error: midtransData });
         }
