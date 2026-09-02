@@ -15,7 +15,7 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 font-sans pb-24 selection:bg-blue-600 selection:text-white" onload="loadPulsaBrands()">
+<body class="bg-slate-50 text-slate-800 font-sans pb-24 selection:bg-blue-600 selection:text-white" onload="loadAllDynamicMenus()">
 
     <header class="bg-blue-600 text-white sticky top-0 z-50 shadow-md">
         <div class="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
@@ -42,6 +42,7 @@
                 <i class="fas fa-bolt absolute -right-3 -bottom-4 text-7xl text-white/10"></i>
             </div>
 
+            <!-- Menu Filter Kategori Utama -->
             <div class="grid grid-cols-4 gap-3 mb-6 text-center">
                 <div onclick="filterCategory('game')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition">
                     <div class="w-10 h-10 mx-auto rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center mb-1.5"><i class="fas fa-gamepad"></i></div>
@@ -62,35 +63,26 @@
             </div>
 
             <div id="productSections">
+                <!-- Section Game Otomatis -->
                 <div class="mb-6 category-group" data-cat="game">
                     <h3 class="font-bold text-slate-800 mb-3 text-sm flex items-center gap-2"><i class="fas fa-fire text-red-500"></i> Top Up Game</h3>
-                    <div class="grid grid-cols-3 gap-3">
-                        <div onclick="openCheckout('Mega Tower', 'game', 'id', 'MEGA TOWER')" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:border-blue-500 transition p-2 text-center">
-                            <div class="aspect-square rounded-lg bg-emerald-600 text-white flex items-center justify-center text-2xl mb-2"><i class="fas fa-tower-observation"></i></div>
-                            <p class="text-[11px] font-bold text-slate-700 truncate">Mega Tower</p>
-                        </div>
-                        <div onclick="openCheckout('Mobile Legends', 'game', 'id', 'MOBILE LEGENDS')" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:border-blue-500 transition p-2 text-center">
-                            <div class="aspect-square rounded-lg bg-blue-600 text-white flex items-center justify-center text-2xl mb-2"><i class="fas fa-shield-halved"></i></div>
-                            <p class="text-[11px] font-bold text-slate-700 truncate">Mobile Legends</p>
-                        </div>
-                        <div onclick="openCheckout('Free Fire', 'game', 'id', 'FREE FIRE')" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:border-blue-500 transition p-2 text-center">
-                            <div class="aspect-square rounded-lg bg-orange-600 text-white flex items-center justify-center text-2xl mb-2"><i class="fas fa-crosshairs"></i></div>
-                            <p class="text-[11px] font-bold text-slate-700 truncate">Free Fire</p>
-                        </div>
+                    <div id="dynamicGameContainer" class="grid grid-cols-3 gap-3">
+                        <div class="col-span-3 text-center text-xs text-slate-400 py-2">Memuat game dari Digiflazz...</div>
                     </div>
                 </div>
 
-                <!-- KOTAK PULSA OTOMATIS: Nanti diisi otomatis oleh script dari akun Digiflazz lu -->
+                <!-- Section Pulsa Otomatis -->
                 <div class="mb-6 category-group" data-cat="pulsa">
                     <h3 class="font-bold text-slate-800 mb-3 text-sm flex items-center gap-2"><i class="fas fa-signal text-emerald-500"></i> Pulsa & Paket Data</h3>
                     <div id="dynamicPulsaContainer" class="grid grid-cols-2 gap-3">
-                        <div class="col-span-2 text-center text-xs text-slate-400 py-3">Memuat operator dari Digiflazz...</div>
+                        <div class="col-span-2 text-center text-xs text-slate-400 py-2">Memuat operator pulsa...</div>
                     </div>
                 </div>
 
+                <!-- Section Token PLN Otomatis -->
                 <div class="mb-6 category-group" data-cat="token">
                     <h3 class="font-bold text-slate-800 mb-3 text-sm flex items-center gap-2"><i class="fas fa-bolt text-amber-500"></i> Token Listrik PLN</h3>
-                    <div class="grid grid-cols-1">
+                    <div id="dynamicTokenContainer" class="grid grid-cols-1">
                         <div onclick="openCheckout('Token Listrik PLN', 'token', 'meter', 'PLN')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
                             <div class="w-10 h-10 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center"><i class="fas fa-bolt"></i></div>
                             <div>
@@ -101,25 +93,11 @@
                     </div>
                 </div>
 
+                <!-- Section E-Wallet Otomatis -->
                 <div class="mb-6 category-group" data-cat="ewallet">
                     <h3 class="font-bold text-slate-800 mb-3 text-sm flex items-center gap-2"><i class="fas fa-wallet text-purple-500"></i> Top Up E-Wallet</h3>
-                    <div class="grid grid-cols-4 gap-2 text-center">
-                        <div onclick="openCheckout('GoPay', 'ewallet', 'phone', 'GO PAY')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500">
-                            <div class="text-green-500 text-lg mb-1"><i class="fas fa-circle-dollar-to-slot"></i></div>
-                            <p class="text-[10px] font-bold">GoPay</p>
-                        </div>
-                        <div onclick="openCheckout('DANA', 'ewallet', 'phone', 'DANA')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500">
-                            <div class="text-blue-500 text-lg mb-1"><i class="fas fa-wallet"></i></div>
-                            <p class="text-[10px] font-bold">DANA</p>
-                        </div>
-                        <div onclick="openCheckout('OVO', 'ewallet', 'phone', 'OVO')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500">
-                            <div class="text-purple-500 text-lg mb-1"><i class="fas fa-qrcode"></i></div>
-                            <p class="text-[10px] font-bold">OVO</p>
-                        </div>
-                        <div onclick="openCheckout('ShopeePay', 'ewallet', 'phone', 'SHOPEE PAY')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500">
-                            <div class="text-orange-500 text-lg mb-1"><i class="fas fa-bag-shopping"></i></div>
-                            <p class="text-[10px] font-bold">ShopeePay</p>
-                        </div>
+                    <div id="dynamicEwalletContainer" class="grid grid-cols-4 gap-2 text-center">
+                        <div class="col-span-4 text-center text-xs text-slate-400 py-2">Memuat e-wallet...</div>
                     </div>
                 </div>
             </div>
@@ -154,17 +132,18 @@
         </div>
     </main>
 
+    <!-- Bottom Nav -->
     <div class="fixed bottom-0 w-full bg-white border-t border-slate-200 z-40">
         <div class="max-w-md mx-auto flex justify-around p-2 text-slate-400">
             <button onclick="switchView('catalog')" class="flex flex-col items-center text-blue-600">
                 <i class="fas fa-house text-base"></i>
                 <span class="text-[9px] font-bold mt-0.5">Beranda</span>
             </button>
-            <div class="flex flex-col items-center hover:text-blue-600 cursor-pointer">
+            <div onclick="alert('Fitur Cek Status transaksi via Order ID segera hadir!')" class="flex flex-col items-center hover:text-blue-600 cursor-pointer">
                 <i class="fas fa-receipt text-base"></i>
                 <span class="text-[9px] font-bold mt-0.5">Cek Status</span>
             </div>
-            <div class="flex flex-col items-center hover:text-blue-600 cursor-pointer">
+            <div onclick="alert('Silakan hubungi Admin via WhatsApp untuk bantuan kendala transaksi.')" class="flex flex-col items-center hover:text-blue-600 cursor-pointer">
                 <i class="fas fa-headset text-base"></i>
                 <span class="text-[9px] font-bold mt-0.5">Bantuan</span>
             </div>
@@ -172,29 +151,51 @@
     </div>
 
     <script>
-        // Fungsi otomatis narik semua operator pulsa aktif dari Digiflazz pas web dibuka
-        async function loadPulsaBrands() {
+        // Fungsi untuk narik otomatis semua menu dari Digiflazz berdasarkan kategori
+        async function loadAllDynamicMenus() {
+            fetchBrands('pulsa', 'dynamicPulsaContainer', 'phone', 'Pulsa');
+            fetchBrands('game', 'dynamicGameContainer', 'id', 'Game');
+            fetchBrands('ewallet', 'dynamicEwalletContainer', 'phone', 'E-Wallet');
+        }
+
+        async function fetchBrands(categoryName, elementId, inputType, labelPrefix) {
             try {
                 const res = await fetch('/api/get-products', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'get_brands' })
+                    body: JSON.stringify({ action: 'get_brands_by_category', category: categoryName })
                 });
                 const brands = await res.json();
-                const container = document.getElementById('dynamicPulsaContainer');
+                const container = document.getElementById(elementId);
 
                 if (Array.isArray(brands) && brands.length > 0) {
-                    container.innerHTML = brands.map(b => `
-                        <div onclick="openCheckout('Pulsa ${b}', 'pulsa', 'phone', '${b}')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center"><i class="fas fa-signal"></i></div>
-                            <div>
-                                <p class="text-xs font-bold text-slate-800">${b}</p>
-                                <p class="text-[10px] text-slate-400">Pulsa & Data</p>
+                    if (categoryName === 'ewallet') {
+                        container.innerHTML = brands.map(b => `
+                            <div onclick="openCheckout('${b}', '${categoryName}', '${inputType}', '${b}')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500">
+                                <div class="text-purple-500 text-lg mb-1"><i class="fas fa-wallet"></i></div>
+                                <p class="text-[10px] font-bold truncate">${b}</p>
                             </div>
-                        </div>
-                    `).join('');
+                        `).join('');
+                    } else if (categoryName === 'game') {
+                        container.innerHTML = brands.map(b => `
+                            <div onclick="openCheckout('${b}', '${categoryName}', '${inputType}', '${b}')" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:border-blue-500 transition p-2 text-center">
+                                <div class="aspect-square rounded-lg bg-blue-600 text-white flex items-center justify-center text-xl mb-2"><i class="fas fa-gamepad"></i></div>
+                                <p class="text-[11px] font-bold text-slate-700 truncate">${b}</p>
+                            </div>
+                        `).join('');
+                    } else {
+                        container.innerHTML = brands.map(b => `
+                            <div onclick="openCheckout('${b}', '${categoryName}', '${inputType}', '${b}')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center"><i class="fas fa-signal"></i></div>
+                                <div>
+                                    <p class="text-xs font-bold text-slate-800 truncate">${b}</p>
+                                    <p class="text-[10px] text-slate-400">${labelPrefix}</p>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
                 } else {
-                    container.innerHTML = `<div class="col-span-2 text-center text-xs text-red-500">Tidak ada operator pulsa aktif.</div>`;
+                    container.innerHTML = `<div class="col-span-2 text-center text-xs text-red-500">Tidak ada produk aktif.</div>`;
                 }
             } catch (e) {
                 console.error(e);
