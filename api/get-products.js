@@ -11,7 +11,6 @@ export default async function handler(req, res) {
         return res.status(500).json({ message: 'API Key Digiflazz belum diatur' });
     }
 
-    // Pembuatan signature MD5 sesuai dokumentasi Digiflazz
     const sign = crypto.createHash('md5').update(username + apiKey + 'pricelist').digest('hex');
 
     try {
@@ -23,37 +22,33 @@ export default async function handler(req, res) {
 
         const data = await digiflazzResponse.json();
         
-        // Pastikan response data valid dan berbentuk array
         if (data.data && Array.isArray(data.data)) {
-            // Gunakan buyer_product_status untuk memastikan produk aktif dan bisa kamu beli
-            let activeProducts = data.data.filter(item => item.buyer_product_status === true);
+            // Filter dilonggarkan: kalau salah satu statusnya true, anggap aktif.
+            let activeProducts = data.data.filter(item => item.seller_product_status === true || item.buyer_product_status === true);
 
-            // Filter brand sesuai kategori yang dipilih dari frontend
+            // Filter brand sesuai kategori
             if (action === 'get_brands') {
                 let cat = (category || "").toLowerCase();
                 let matched = activeProducts.filter(item => {
                     let c = (item.category || "").toLowerCase();
-                    // Pencocokan kategori diperluas sesuai dashboard Digiflazz
-                    if (cat === 'pulsa') return c === 'pulsa' || c === 'data' || c === 'paket sms & telpon' || c === 'masa aktif';
-                    if (cat === 'games') return c === 'games' || c === 'voucher' || c === 'aktivasi voucher';
-                    if (cat === 'pln') return c === 'pln';
-                    if (cat === 'emoney') return c === 'e-money' || c === 'e-wallet' || c.includes('saldo');
+                    // Menggunakan includes agar lebih kebal terhadap perubahan nama kategori dari Digiflazz
+                    if (cat === 'pulsa') return c.includes('pulsa') || c.includes('data') || c.includes('sms') || c.includes('telpon') || c.includes('aktif');
+                    if (cat === 'games') return c.includes('game') || c.includes('voucher');
+                    if (cat === 'pln') return c.includes('pln');
+                    if (cat === 'emoney') return c.includes('e-money') || c.includes('wallet') || c.includes('saldo') || c.includes('dana') || c.includes('ovo') || c.includes('gopay');
                     return false;
                 });
                 
-                // Ambil daftar brand unik
                 let brands = [...new Set(matched.map(item => item.brand))].sort();
                 return res.status(200).json(brands);
             }
 
-            // Ambil nominal produk berdasarkan brand untuk halaman checkout
+            // Ambil nominal produk untuk halaman checkout
             if (action === 'get_products') {
                 let filtered = activeProducts.filter(item => (item.brand || "").toUpperCase() === (brand || "").toUpperCase());
-                
-                // Urutkan dari harga termurah ke termahal
                 filtered.sort((a, b) => a.price - b.price);
 
-                const marginProfit = 1500; // Keuntungan bersih per transaksi
+                const marginProfit = 1500; // Untung per transaksi
                 const products = filtered.map(p => ({
                     sku: p.buyer_sku_code,
                     name: p.product_name,
@@ -63,8 +58,7 @@ export default async function handler(req, res) {
                 return res.status(200).json(products);
             }
         }
-        
-        return res.status(400).json({ message: 'Gagal ambil data, periksa response Digiflazz' });
+        return res.status(400).json({ message: 'Gagal ambil data, array kosong' });
     } catch (error) {
         return res.status(500).json({ message: 'Server error: ' + error.message });
     }
