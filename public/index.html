@@ -12,8 +12,6 @@
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .fade-in { animation: fadeIn 0.25s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-        
-        /* Utility class untuk tab konten biar rapi */
         .tab-content { display: none; }
         .tab-content.active { display: grid; }
     </style>
@@ -68,87 +66,73 @@
 
             <!-- TAB KONTEN PULSA -->
             <div id="grid-pulsa" class="tab-content grid-cols-2 gap-3 mb-6">
-                <!-- Telkomsel -->
-                <div onclick="openCheckout('TELKOMSEL', 'pulsa', 'https://upload.wikimedia.org/wikipedia/commons/9/9b/Telkomsel_2021.svg')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-slate-50 overflow-hidden"><img src="https://upload.wikimedia.org/wikipedia/commons/9/9b/Telkomsel_2021.svg" class="w-8 h-8 object-contain"></div>
-                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">Telkomsel</p><p class="text-[10px] text-slate-400">Pulsa / Data</p></div>
+                <div onclick="openCheckout('TELKOMSEL', 'pulsa', 'bg-red-600', 'TS')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-red-600 text-white font-extrabold shadow-inner">TS</div>
+                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">TELKOMSEL</p><p class="text-[10px] text-slate-400">Pulsa / Data</p></div>
                 </div>
-                <!-- Indosat -->
-                <div onclick="openCheckout('INDOSAT', 'pulsa', 'https://upload.wikimedia.org/wikipedia/commons/1/15/Indosat_Ooredoo_Hutchison_logo.svg')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-slate-50 overflow-hidden"><img src="https://upload.wikimedia.org/wikipedia/commons/1/15/Indosat_Ooredoo_Hutchison_logo.svg" class="w-8 h-8 object-contain"></div>
-                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">Indosat</p><p class="text-[10px] text-slate-400">Pulsa / Data</p></div>
+                <div onclick="openCheckout('INDOSAT', 'pulsa', 'bg-yellow-500', 'IN')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-yellow-500 text-white font-extrabold shadow-inner">IN</div>
+                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">INDOSAT</p><p class="text-[10px] text-slate-400">Pulsa / Data</p></div>
                 </div>
-                <!-- Axis -->
-                <div onclick="openCheckout('AXIS', 'pulsa', 'https://upload.wikimedia.org/wikipedia/commons/7/7b/Axis_Logo_2015.svg')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-slate-50 overflow-hidden"><img src="https://upload.wikimedia.org/wikipedia/commons/7/7b/Axis_Logo_2015.svg" class="w-8 h-8 object-contain"></div>
+                <div onclick="openCheckout('AXIS', 'pulsa', 'bg-purple-600', 'AX')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-purple-600 text-white font-extrabold shadow-inner">AX</div>
                     <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">AXIS</p><p class="text-[10px] text-slate-400">Pulsa / Data</p></div>
                 </div>
-                <!-- Smartfren -->
-                <div onclick="openCheckout('SMARTFREN', 'pulsa', 'https://upload.wikimedia.org/wikipedia/commons/1/1a/Smartfren_2018.svg')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-slate-50 overflow-hidden"><img src="https://upload.wikimedia.org/wikipedia/commons/1/1a/Smartfren_2018.svg" class="w-10 h-5 object-contain"></div>
-                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">Smartfren</p><p class="text-[10px] text-slate-400">Pulsa / Data</p></div>
+                <div onclick="openCheckout('SMARTFREN', 'pulsa', 'bg-pink-600', 'SM')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-pink-600 text-white font-extrabold shadow-inner">SM</div>
+                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">SMARTFREN</p><p class="text-[10px] text-slate-400">Pulsa / Data</p></div>
                 </div>
-                <!-- Tri -->
-                <div onclick="openCheckout('TRI', 'pulsa', 'https://upload.wikimedia.org/wikipedia/commons/3/3d/Tri_logo_%282021%29.svg')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-slate-50 overflow-hidden p-1"><img src="https://upload.wikimedia.org/wikipedia/commons/3/3d/Tri_logo_%282021%29.svg" class="w-full h-full object-contain"></div>
-                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">Tri</p><p class="text-[10px] text-slate-400">Pulsa / Data</p></div>
+                <div onclick="openCheckout('TRI', 'pulsa', 'bg-slate-900', '3')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-slate-900 text-white font-extrabold shadow-inner">3</div>
+                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">TRI</p><p class="text-[10px] text-slate-400">Pulsa / Data</p></div>
                 </div>
-                <!-- XL -->
-                <div onclick="openCheckout('XL', 'pulsa', 'https://upload.wikimedia.org/wikipedia/commons/e/ee/XL_Logo_2016.svg')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-slate-50 overflow-hidden"><img src="https://upload.wikimedia.org/wikipedia/commons/e/ee/XL_Logo_2016.svg" class="w-8 h-8 object-contain"></div>
+                <div onclick="openCheckout('XL', 'pulsa', 'bg-blue-700', 'XL')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-blue-700 text-white font-extrabold shadow-inner">XL</div>
                     <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">XL</p><p class="text-[10px] text-slate-400">Pulsa / Data</p></div>
                 </div>
-                <!-- by.U -->
-                <div onclick="openCheckout('by.U', 'pulsa', 'https://upload.wikimedia.org/wikipedia/commons/9/94/By.U_logo.svg')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-slate-50 overflow-hidden p-1"><img src="https://upload.wikimedia.org/wikipedia/commons/9/94/By.U_logo.svg" class="w-full h-full object-contain"></div>
+                <div onclick="openCheckout('BY.U', 'pulsa', 'bg-blue-500', 'BY')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-blue-500 text-white font-extrabold shadow-inner">BY</div>
                     <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">by.U</p><p class="text-[10px] text-slate-400">Pulsa / Data</p></div>
                 </div>
             </div>
 
             <!-- TAB KONTEN GAMES -->
             <div id="grid-games" class="tab-content grid-cols-2 gap-3 mb-6">
-                <!-- Mobile Legends -->
-                <div onclick="openCheckout('MOBILE LEGENDS', 'games', 'https://upload.wikimedia.org/wikipedia/commons/6/6f/Mobile_Legends_Bang_Bang_logo.png')" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:border-blue-500 transition p-3 text-center">
-                    <div class="aspect-square rounded-lg bg-slate-900 flex items-center justify-center overflow-hidden mb-2 p-2"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6f/Mobile_Legends_Bang_Bang_logo.png" class="w-full h-full object-contain"></div>
-                    <p class="text-xs font-bold text-slate-700 truncate">Mobile Legends</p>
+                <div onclick="openCheckout('MOBILE LEGENDS', 'games', 'bg-indigo-900', 'ML')" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:border-blue-500 transition p-3 text-center">
+                    <div class="aspect-square rounded-lg bg-indigo-900 text-white font-black text-2xl flex items-center justify-center shadow-inner mb-2">ML</div>
+                    <p class="text-xs font-bold text-slate-700 truncate">MOBILE LEGENDS</p>
                 </div>
-                <!-- Free Fire -->
-                <div onclick="openCheckout('FREE FIRE', 'games', 'https://upload.wikimedia.org/wikipedia/commons/4/47/Free_Fire_Logo.png')" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:border-blue-500 transition p-3 text-center">
-                    <div class="aspect-square rounded-lg bg-slate-900 flex items-center justify-center overflow-hidden mb-2 p-2"><img src="https://upload.wikimedia.org/wikipedia/commons/4/47/Free_Fire_Logo.png" class="w-full h-full object-contain"></div>
-                    <p class="text-xs font-bold text-slate-700 truncate">Free Fire</p>
+                <div onclick="openCheckout('FREE FIRE', 'games', 'bg-orange-600', 'FF')" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:border-blue-500 transition p-3 text-center">
+                    <div class="aspect-square rounded-lg bg-orange-600 text-white font-black text-2xl flex items-center justify-center shadow-inner mb-2">FF</div>
+                    <p class="text-xs font-bold text-slate-700 truncate">FREE FIRE</p>
                 </div>
             </div>
 
             <!-- TAB KONTEN E-MONEY -->
             <div id="grid-emoney" class="tab-content grid-cols-2 gap-3 mb-6">
-                <!-- Go Pay -->
-                <div onclick="openCheckout('GO PAY', 'emoney', 'https://upload.wikimedia.org/wikipedia/commons/8/86/Gopay_logo.svg')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-slate-50 overflow-hidden"><img src="https://upload.wikimedia.org/wikipedia/commons/8/86/Gopay_logo.svg" class="w-8 h-8 object-contain"></div>
-                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">GoPay</p></div>
+                <div onclick="openCheckout('GO PAY', 'emoney', 'bg-blue-500', 'GP')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-blue-500 text-white font-extrabold shadow-inner">GP</div>
+                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">GO PAY</p></div>
                 </div>
-                <!-- OVO -->
-                <div onclick="openCheckout('OVO', 'emoney', 'https://upload.wikimedia.org/wikipedia/commons/e/eb/Logo_ovo_purple.svg')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-slate-50 overflow-hidden"><img src="https://upload.wikimedia.org/wikipedia/commons/e/eb/Logo_ovo_purple.svg" class="w-8 h-8 object-contain"></div>
+                <div onclick="openCheckout('OVO', 'emoney', 'bg-purple-700', 'OV')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-purple-700 text-white font-extrabold shadow-inner">OV</div>
                     <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">OVO</p></div>
                 </div>
-                <!-- DANA -->
-                <div onclick="openCheckout('DANA', 'emoney', 'https://upload.wikimedia.org/wikipedia/commons/7/72/Logo_dana_blue.svg')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-slate-50 overflow-hidden"><img src="https://upload.wikimedia.org/wikipedia/commons/7/72/Logo_dana_blue.svg" class="w-8 h-8 object-contain"></div>
+                <div onclick="openCheckout('DANA', 'emoney', 'bg-blue-400', 'DA')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-blue-400 text-white font-extrabold shadow-inner">DA</div>
                     <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">DANA</p></div>
                 </div>
-                <!-- Shopee Pay -->
-                <div onclick="openCheckout('SHOPEE PAY', 'emoney', 'https://upload.wikimedia.org/wikipedia/commons/f/fe/Shopee.svg')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-slate-50 overflow-hidden"><img src="https://upload.wikimedia.org/wikipedia/commons/f/fe/Shopee.svg" class="w-8 h-8 object-contain"></div>
-                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">Shopee Pay</p></div>
+                <div onclick="openCheckout('SHOPEE PAY', 'emoney', 'bg-orange-500', 'SP')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-orange-500 text-white font-extrabold shadow-inner">SP</div>
+                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">SHOPEE PAY</p></div>
                 </div>
             </div>
 
             <!-- TAB KONTEN PLN -->
             <div id="grid-pln" class="tab-content grid-cols-1 gap-3 mb-6">
-                <!-- PLN -->
-                <div onclick="openCheckout('PLN', 'pln', 'https://upload.wikimedia.org/wikipedia/commons/9/9e/PLN_Logo.svg')" class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-4">
-                    <div class="w-12 h-12 rounded-lg shrink-0 flex items-center justify-center bg-amber-50 overflow-hidden p-2"><img src="https://upload.wikimedia.org/wikipedia/commons/9/9e/PLN_Logo.svg" class="w-full h-full object-contain"></div>
-                    <div class="overflow-hidden"><p class="text-sm font-bold text-slate-800">Token PLN Prabayar</p><p class="text-xs text-slate-400 mt-0.5">Otomatis masuk 24 Jam</p></div>
+                <div onclick="openCheckout('PLN', 'pln', 'bg-amber-500', 'PLN')" class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-lg shrink-0 flex items-center justify-center bg-amber-500 text-white font-black text-lg shadow-inner">PLN</div>
+                    <div class="overflow-hidden"><p class="text-sm font-bold text-slate-800">PLN</p><p class="text-xs text-slate-400 mt-0.5">Otomatis masuk 24 Jam</p></div>
                 </div>
             </div>
         </div>
@@ -156,8 +140,8 @@
         <!-- ================= VIEW 2: FORM CHECKOUT DETAIL ================= -->
         <div id="viewCheckout" class="hidden fade-in">
             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-4 flex items-center gap-3">
-                <div id="checkoutLogoContainer" class="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center text-xl overflow-hidden shrink-0">
-                    <i class="fas fa-cart-shopping"></i>
+                <div id="checkoutLogoContainer" class="w-12 h-12 rounded-lg bg-blue-600 flex items-center justify-center shrink-0">
+                    <i class="fas fa-cart-shopping text-white"></i>
                 </div>
                 <div>
                     <h2 id="checkoutTitle" class="font-bold text-slate-800 text-sm">Nama Produk</h2>
@@ -203,14 +187,11 @@
     </div>
 
     <script>
-        // Logika untuk ganti tab kategori
         function filterCategory(categoryName) {
-            // Reset warna menu atas
             document.querySelectorAll('.menu-cat').forEach(el => el.classList.remove('bg-blue-50', 'border-blue-500'));
             const activeMenu = document.getElementById('menu-' + categoryName);
             if(activeMenu) activeMenu.classList.add('bg-blue-50', 'border-blue-500');
 
-            // Sembunyikan semua grid produk, lalu tampilkan yang sesuai
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             const activeGrid = document.getElementById('grid-' + categoryName);
             if(activeGrid) activeGrid.classList.add('active');
@@ -225,23 +206,17 @@
             }
         }
 
-        // Logika untuk nampilin form checkout dan ngambil harga nominal dari API
-        async function openCheckout(brandName, categoryType, logoUrl) {
+        async function openCheckout(brandName, categoryType, colorClass, initials) {
             document.getElementById('viewCatalog').classList.add('hidden');
             document.getElementById('viewCheckout').classList.remove('hidden');
             document.getElementById('btnBack').classList.remove('hidden');
             
             document.getElementById('checkoutTitle').innerText = brandName;
             
-            // Set gambar logo di halaman checkout
             const logoContainer = document.getElementById('checkoutLogoContainer');
-            if (logoUrl) {
-                logoContainer.innerHTML = `<img src="${logoUrl}" class="w-full h-full object-contain p-1" alt="${brandName}">`;
-            } else {
-                logoContainer.innerHTML = `<i class="fas fa-bolt text-slate-400"></i>`;
-            }
+            logoContainer.className = `w-12 h-12 rounded-lg flex items-center justify-center shrink-0 shadow-inner text-white font-extrabold text-xl ${colorClass}`;
+            logoContainer.innerHTML = initials;
             
-            // Atur teks label input target sesuai kategori
             const label = document.getElementById('inputLabelText');
             const targetInput = document.getElementById('targetId');
             if(categoryType === 'games') {
@@ -259,12 +234,10 @@
             const btnPay = document.getElementById('btnPay');
             btnPay.disabled = true;
 
-            // Loading state pas lagi narik harga dari server Digiflazz
-            container.innerHTML = `<div class="col-span-2 text-center text-xs text-slate-500 py-6"><i class="fas fa-spinner fa-spin mr-2 text-lg"></i> Mengambil data dari server...</div>`;
+            container.innerHTML = `<div class="col-span-2 text-center text-xs text-slate-500 py-6"><i class="fas fa-spinner fa-spin mr-2 text-lg"></i> Mengambil data dari pusat...</div>`;
             window.scrollTo(0,0);
 
             try {
-                // Tembak API Digiflazz khusus untuk brand ini aja
                 const res = await fetch('/api/get-products', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -283,14 +256,13 @@
                     `).join('');
                     btnPay.disabled = false;
                 } else {
-                    container.innerHTML = `<div class="col-span-2 text-center text-xs text-red-500 font-bold py-6">Produk sedang gangguan / kosong dari pusat.</div>`;
+                    container.innerHTML = `<div class="col-span-2 text-center text-xs text-red-500 font-bold py-6">Produk sedang kosong / gangguan.</div>`;
                 }
             } catch (e) {
-                container.innerHTML = `<div class="col-span-2 text-center text-xs text-red-500 py-6">Koneksi gagal atau server error.</div>`;
+                container.innerHTML = `<div class="col-span-2 text-center text-xs text-red-500 py-6">Gagal memuat dari server.</div>`;
             }
         }
 
-        // Proses Submit Transaksi Midtrans
         document.getElementById('formCheckout').addEventListener('submit', async function(e) {
             e.preventDefault();
             
