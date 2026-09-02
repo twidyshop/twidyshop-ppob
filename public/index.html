@@ -6,7 +6,7 @@
     <title>TWIDY SHOP - Pusat Top Up & PPOB Terlengkap</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <!-- Ganti CLIENT_KEY_KAMU dengan milik Midtrans Production lu -->
+    <!-- Ganti CLIENT_KEY_KAMU dengan Client Key Midtrans Production lu -->
     <script src="https://app.midtrans.com/snap/snap.js" data-client-key="CLIENT_KEY_KAMU"></script>
     <style>
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -15,7 +15,7 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 font-sans pb-24 selection:bg-blue-600 selection:text-white">
+<body class="bg-slate-50 text-slate-800 font-sans pb-24 selection:bg-blue-600 selection:text-white" onload="loadPulsaBrands()">
 
     <header class="bg-blue-600 text-white sticky top-0 z-50 shadow-md">
         <div class="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
@@ -80,23 +80,11 @@
                     </div>
                 </div>
 
+                <!-- KOTAK PULSA OTOMATIS: Nanti diisi otomatis oleh script dari akun Digiflazz lu -->
                 <div class="mb-6 category-group" data-cat="pulsa">
                     <h3 class="font-bold text-slate-800 mb-3 text-sm flex items-center gap-2"><i class="fas fa-signal text-emerald-500"></i> Pulsa & Paket Data</h3>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div onclick="openCheckout('Pulsa Telkomsel', 'pulsa', 'phone', 'TELKOMSEL')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center"><i class="fas fa-phone"></i></div>
-                            <div>
-                                <p class="text-xs font-bold text-slate-800">Telkomsel</p>
-                                <p class="text-[10px] text-slate-400">Pulsa Reguler</p>
-                            </div>
-                        </div>
-                        <div onclick="openCheckout('Pulsa Indosat', 'pulsa', 'phone', 'INDOSAT')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center"><i class="fas fa-globe"></i></div>
-                            <div>
-                                <p class="text-xs font-bold text-slate-800">Indosat</p>
-                                <p class="text-[10px] text-slate-400">Pulsa Reguler</p>
-                            </div>
-                        </div>
+                    <div id="dynamicPulsaContainer" class="grid grid-cols-2 gap-3">
+                        <div class="col-span-2 text-center text-xs text-slate-400 py-3">Memuat operator dari Digiflazz...</div>
                     </div>
                 </div>
 
@@ -155,7 +143,6 @@
 
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-6">
                     <label class="block text-xs font-bold text-slate-700 mb-2">Pilih Nominal Produk</label>
-                    <!-- Kotak ini bakal dikosongin dulu pas klik, terus diisi loading, terus diisi data dari API Digiflazz -->
                     <div class="grid grid-cols-2 gap-2 max-h-[300px] overflow-y-auto no-scrollbar" id="nominalOptions">
                     </div>
                 </div>
@@ -185,6 +172,35 @@
     </div>
 
     <script>
+        // Fungsi otomatis narik semua operator pulsa aktif dari Digiflazz pas web dibuka
+        async function loadPulsaBrands() {
+            try {
+                const res = await fetch('/api/get-products', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'get_brands' })
+                });
+                const brands = await res.json();
+                const container = document.getElementById('dynamicPulsaContainer');
+
+                if (Array.isArray(brands) && brands.length > 0) {
+                    container.innerHTML = brands.map(b => `
+                        <div onclick="openCheckout('Pulsa ${b}', 'pulsa', 'phone', '${b}')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center"><i class="fas fa-signal"></i></div>
+                            <div>
+                                <p class="text-xs font-bold text-slate-800">${b}</p>
+                                <p class="text-[10px] text-slate-400">Pulsa & Data</p>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = `<div class="col-span-2 text-center text-xs text-red-500">Tidak ada operator pulsa aktif.</div>`;
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
         function switchView(view) {
             if(view === 'catalog') {
                 document.getElementById('viewCatalog').classList.remove('hidden');
@@ -205,7 +221,6 @@
             });
         }
 
-        // FUNGSI INI SEKARANG NGE-FETCH DATA LANGSUNG DARI BACKEND
         async function openCheckout(title, type, inputType, brandName) {
             document.getElementById('viewCatalog').classList.add('hidden');
             document.getElementById('viewCheckout').classList.remove('hidden');
@@ -220,23 +235,20 @@
 
             const container = document.getElementById('nominalOptions');
             const btnPay = document.getElementById('btnPay');
-            btnPay.disabled = true; // Kunci tombol bayar pas lagi loading
+            btnPay.disabled = true;
 
-            // Tampilkan animasi loading
-            container.innerHTML = `<div class="col-span-2 text-center text-xs text-slate-500 py-6"><i class="fas fa-spinner fa-spin mr-2 text-lg"></i> Sinkronisasi produk...</div>`;
+            container.innerHTML = `<div class="col-span-2 text-center text-xs text-slate-500 py-6"><i class="fas fa-spinner fa-spin mr-2 text-lg"></i> Mengambil produk...</div>`;
             window.scrollTo(0,0);
 
             try {
-                // Minta data ke file api/get-products.js
                 const res = await fetch('/api/get-products', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ brand: brandName })
+                    body: JSON.stringify({ action: 'get_products', brand: brandName })
                 });
                 const products = await res.json();
 
                 if (products.length > 0) {
-                    // Berhasil! Tampilkan radio button berdasarkan data Digiflazz
                     container.innerHTML = products.map(p => `
                         <label class="border border-slate-200 p-2.5 rounded-lg cursor-pointer hover:border-blue-600 flex flex-col">
                             <input type="radio" name="nominal" value="${p.sku}" data-price="${p.price}" required class="mb-1">
@@ -244,7 +256,7 @@
                             <span class="text-[10px] text-blue-600">Rp ${p.price.toLocaleString('id-ID')}</span>
                         </label>
                     `).join('');
-                    btnPay.disabled = false; // Buka kunci tombol bayar
+                    btnPay.disabled = false;
                 } else {
                     container.innerHTML = `<div class="col-span-2 text-center text-xs text-red-500 font-bold py-6">Produk Sedang Gangguan / Kosong</div>`;
                 }
@@ -266,7 +278,7 @@
             }
 
             const productCode = selectedNomor.value;
-            const price = selectedNomor.getAttribute('data-price'); // Ambil harga yang dipilih user
+            const price = selectedNomor.getAttribute('data-price');
             const originalText = btnPay.innerHTML;
 
             btnPay.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Menyiapkan Pembayaran...';
@@ -276,7 +288,6 @@
                 const response = await fetch('/api/create-transaction', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    // Kirim ID Tujuan, SKU Produk, dan Harga ke create-transaction.js
                     body: JSON.stringify({ targetId, productCode, price }) 
                 });
 
