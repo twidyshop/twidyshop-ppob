@@ -27,16 +27,22 @@ export default async function handler(req, res) {
         const data = await digiflazzResponse.json();
         
         if (data.data) {
-            // Filter produk berdasarkan nama tombol (brand) & pastikan produknya aktif (nggak gangguan)
-            let filtered = data.data.filter(item => 
-                item.brand.toUpperCase() === brand.toUpperCase() && 
-                item.seller_product_status === true
-            );
+            const searchKeyword = brand.toUpperCase();
 
-            // Urutkan dari harga termurah ke termahal
+            // Filter fleksibel: Mencocokkan brand atau nama produk yang mengandung kata kunci
+            let filtered = data.data.filter(item => {
+                const itemBrand = (item.brand || "").toUpperCase();
+                const itemName = (item.product_name || "").toUpperCase();
+                
+                // Khusus Pulsa, pastikan mencocokkan operatornya
+                return (itemBrand.includes(searchKeyword) || itemName.includes(searchKeyword)) && 
+                       item.seller_product_status === true;
+            });
+
+            // Urutkan dari harga termurah
             filtered.sort((a, b) => a.price - b.price);
 
-            // SETTING KEUNTUNGAN LU DI SINI (Misal tiap transaksi lu untung Rp 1.500)
+            // Atur margin keuntungan bersih kamu di sini (Contoh: Rp 1.500)
             const marginProfit = 1500; 
             
             const products = filtered.map(p => ({
