@@ -3,7 +3,7 @@ const crypto = require('crypto');
 export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
 
-    const { action, brand } = req.body; 
+    const { action, category, brand } = req.body; 
     const username = process.env.DIGIFLAZZ_USERNAME;
     const apiKey = process.env.DIGIFLAZZ_API_KEY;
 
@@ -27,26 +27,39 @@ export default async function handler(req, res) {
         const data = await digiflazzResponse.json();
         
         if (data.data) {
-            // FITUR 1: Kalau diminta 'get_brands', kirim daftar semua brand/operator pulsa yang aktif ke web
-            if (action === 'get_brands') {
-                let activeProducts = data.data.filter(item => item.seller_product_status === true);
-                
-                // Ambil daftar brand unik khusus kategori Pulsa
-                let pulsaBrands = [...new Set(activeProducts
-                    .filter(item => item.category.toLowerCase().includes('pulsa') || item.brand.toLowerCase().includes('telkomsel') || item.brand.toLowerCase().includes('indosat') || item.brand.toLowerCase().includes('axis') || item.brand.toLowerCase().includes('xl') || item.brand.toLowerCase().includes('tri') || item.brand.toLowerCase().includes('smartfren'))
-                    .map(item => item.brand))]
-                    .sort();
+            let activeProducts = data.data.filter(item => item.seller_product_status === true);
 
-                return res.status(200).json(pulsaBrands);
+            // FITUR 1: Ambil daftar brand otomatis berdasarkan kategori (Pulsa, Games, E-Wallet, PLN)
+            if (action === 'get_brands_by_category') {
+                let keyword = (category || "").toLowerCase();
+                
+                let matched = activeProducts.filter(item => {
+                    let cat = (item.category || "").toLowerCase();
+                    let brd = (item.brand || "").toLowerCase();
+                    let name = (item.product_name || "").toLowerCase();
+
+                    if (keyword === 'pulsa') {
+                        return cat.includes('pulsa') || cat.includes('data') || brd.includes('telkomsel') || brd.includes('indosat') || brd.includes('axis') || brd.includes('xl') || brd.includes('tri') || brd.includes('smartfren') || brd.includes('by.u');
+                    } else if (keyword === 'game') {
+                        return cat.includes('game') || brd.includes('ml') || brd.includes('free fire') || brd.includes('pubg') || brd.includes('genshin');
+                    } else if (keyword === 'ewallet') {
+                        return cat.includes('e-money') || cat.includes('ewallet') || brd.includes('gopay') || brd.includes('dana') || brd.includes('ovo') || brd.includes('shopeepay');
+                    } else if (keyword === 'token') {
+                        return cat.includes('pln') || brd.includes('pln');
+                    }
+                    return false;
+                });
+
+                let brands = [...new Set(matched.map(item => item.brand))].sort();
+                return res.status(200).json(brands);
             }
 
-            // FITUR 2: Kalau user klik salah satu brand, ambil produk spesifiknya + margin profit
+            // FITUR 2: Ambil list produk spesifik saat brand diklik
             const searchKeyword = (brand || "").toUpperCase();
-            let filtered = data.data.filter(item => {
+            let filtered = activeProducts.filter(item => {
                 const itemBrand = (item.brand || "").toUpperCase();
                 const itemName = (item.product_name || "").toUpperCase();
-                return (itemBrand.includes(searchKeyword) || itemName.includes(searchKeyword)) && 
-                       item.seller_product_status === true;
+                return itemBrand.includes(searchKeyword) || itemName.includes(searchKeyword);
             });
 
             filtered.sort((a, b) => a.price - b.price);
