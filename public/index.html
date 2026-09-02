@@ -6,6 +6,8 @@
     <title>TWIDY SHOP - Pusat Top Up & PPOB Terlengkap</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Midtrans Snap Production CDN (Ganti CLIENT_KEY_KAMU dengan Client Key Live Midtrans-mu) -->
+    <script src="https://app.midtrans.com/snap/snap.js" data-client-key="CLIENT_KEY_KAMU"></script>
     <style>
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -235,24 +237,78 @@
             else if(inputType === 'meter') label.innerText = "Masukkan Nomor Meter / ID Pelanggan PLN";
 
             // Contoh variasi nominal dinamis berdasarkan jenis produk
+            // value="ml100" (Ganti value ini sesuai SKU Produk Digiflazz-mu nantinya)
             const container = document.getElementById('nominalOptions');
             if(type === 'game') {
                 container.innerHTML = `
-                    <label class="border border-slate-200 p-2.5 rounded-lg cursor-pointer hover:border-blue-600 flex flex-col"><input type="radio" name="nominal" value="G1" required><span class="text-xs font-bold text-slate-800 mt-1">100 Diamond</span><span class="text-[10px] text-blue-600">Rp 15.000</span></label>
-                    <label class="border border-slate-200 p-2.5 rounded-lg cursor-pointer hover:border-blue-600 flex flex-col"><input type="radio" name="nominal" value="G2" required><span class="text-xs font-bold text-slate-800 mt-1">300 Diamond</span><span class="text-[10px] text-blue-600">Rp 45.000</span></label>
+                    <label class="border border-slate-200 p-2.5 rounded-lg cursor-pointer hover:border-blue-600 flex flex-col"><input type="radio" name="nominal" value="ml100" required><span class="text-xs font-bold text-slate-800 mt-1">100 Diamond</span><span class="text-[10px] text-blue-600">Rp 15.000</span></label>
+                    <label class="border border-slate-200 p-2.5 rounded-lg cursor-pointer hover:border-blue-600 flex flex-col"><input type="radio" name="nominal" value="ml300" required><span class="text-xs font-bold text-slate-800 mt-1">300 Diamond</span><span class="text-[10px] text-blue-600">Rp 45.000</span></label>
                 `;
             } else {
                 container.innerHTML = `
-                    <label class="border border-slate-200 p-2.5 rounded-lg cursor-pointer hover:border-blue-600 flex flex-col"><input type="radio" name="nominal" value="P1" required><span class="text-xs font-bold text-slate-800 mt-1">Nominal 20.000</span><span class="text-[10px] text-blue-600">Rp 21.000</span></label>
-                    <label class="border border-slate-200 p-2.5 rounded-lg cursor-pointer hover:border-blue-600 flex flex-col"><input type="radio" name="nominal" value="P2" required><span class="text-xs font-bold text-slate-800 mt-1">Nominal 50.000</span><span class="text-[10px] text-blue-600">Rp 51.000</span></label>
+                    <label class="border border-slate-200 p-2.5 rounded-lg cursor-pointer hover:border-blue-600 flex flex-col"><input type="radio" name="nominal" value="pulsa20" required><span class="text-xs font-bold text-slate-800 mt-1">Nominal 20.000</span><span class="text-[10px] text-blue-600">Rp 21.000</span></label>
+                    <label class="border border-slate-200 p-2.5 rounded-lg cursor-pointer hover:border-blue-600 flex flex-col"><input type="radio" name="nominal" value="pulsa50" required><span class="text-xs font-bold text-slate-800 mt-1">Nominal 50.000</span><span class="text-[10px] text-blue-600">Rp 51.000</span></label>
                 `;
             }
             window.scrollTo(0,0);
         }
 
-        document.getElementById('formCheckout').addEventListener('submit', function(e) {
+        // SCRIPT BARU UNTUK KONEK KE BACKEND & MIDTRANS
+        document.getElementById('formCheckout').addEventListener('submit', async function(e) {
             e.preventDefault();
-            alert("Form terkirim! Hubungkan ke backend Vercel & Midtrans untuk memproses pembayaran otomatis.");
+            
+            const targetId = document.getElementById('targetId').value;
+            const selectedNomor = document.querySelector('input[name="nominal"]:checked');
+            const btnPay = document.getElementById('btnPay');
+
+            if (!selectedNomor) {
+                alert("Pilih nominal produk terlebih dahulu!");
+                return;
+            }
+
+            const productCode = selectedNomor.value;
+            const originalText = btnPay.innerHTML;
+
+            btnPay.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Menyiapkan Pembayaran...';
+            btnPay.disabled = true;
+
+            try {
+                const response = await fetch('/api/create-transaction', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ targetId, productCode })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.token) {
+                    window.snap.pay(data.token, {
+                        onSuccess: function(result){ 
+                            alert("Pembayaran Berhasil! Pesanan diproses otomatis."); 
+                            console.log(result);
+                        },
+                        onPending: function(result){ 
+                            alert("Menunggu pembayaran Anda."); 
+                            console.log(result);
+                        },
+                        onError: function(result){ 
+                            alert("Pembayaran Gagal!"); 
+                            console.log(result);
+                        },
+                        onClose: function(){ 
+                            alert("Popup pembayaran ditutup."); 
+                        }
+                    });
+                } else {
+                    alert("Gagal: " + (data.message || 'Terjadi kesalahan sistem'));
+                }
+            } catch (error) {
+                console.error(error);
+                alert("Gagal terhubung ke server backend Vercel.");
+            } finally {
+                btnPay.innerHTML = originalText;
+                btnPay.disabled = false;
+            }
         });
     </script>
 </body>
