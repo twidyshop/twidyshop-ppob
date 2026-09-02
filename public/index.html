@@ -37,32 +37,32 @@
                 <div class="relative z-10">
                     <span class="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Resmi & Legal</span>
                     <h2 class="text-lg font-bold mt-1">Transaksi Tanpa Ribet</h2>
-                    <p class="text-xs text-blue-100 mt-0.5">Pulsa, Token, E-Wallet, & Game Instant Masuk.</p>
+                    <p class="text-xs text-blue-100 mt-0.5">Pulsa, Token, E-Money, & Game Instant Masuk.</p>
                 </div>
                 <i class="fas fa-bolt absolute -right-3 -bottom-4 text-7xl text-white/10"></i>
             </div>
 
-            <!-- Kategori Utama -->
+            <!-- Kategori Utama Sesuai Request -->
             <div class="grid grid-cols-4 gap-3 mb-6 text-center">
-                <div onclick="filterCategory('game')" id="menu-game" class="menu-cat bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition">
+                <div onclick="filterCategory('pulsa')" id="menu-pulsa" class="menu-cat bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition">
+                    <div class="w-10 h-10 mx-auto rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mb-1.5"><i class="fas fa-mobile-screen-button"></i></div>
+                    <span class="text-[10px] font-bold text-slate-700">Pulsa</span>
+                </div>
+                <div onclick="filterCategory('games')" id="menu-games" class="menu-cat bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition">
                     <div class="w-10 h-10 mx-auto rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center mb-1.5"><i class="fas fa-gamepad"></i></div>
                     <span class="text-[10px] font-bold text-slate-700">Games</span>
                 </div>
-                <div onclick="filterCategory('pulsa')" id="menu-pulsa" class="menu-cat bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition">
-                    <div class="w-10 h-10 mx-auto rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mb-1.5"><i class="fas fa-mobile-screen-button"></i></div>
-                    <span class="text-[10px] font-bold text-slate-700">Pulsa & Data</span>
-                </div>
-                <div onclick="filterCategory('token')" id="menu-token" class="menu-cat bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition">
-                    <div class="w-10 h-10 mx-auto rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center mb-1.5"><i class="fas fa-lightbulb"></i></div>
-                    <span class="text-[10px] font-bold text-slate-700">Token PLN</span>
-                </div>
-                <div onclick="filterCategory('ewallet')" id="menu-ewallet" class="menu-cat bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition">
+                <div onclick="filterCategory('emoney')" id="menu-emoney" class="menu-cat bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition">
                     <div class="w-10 h-10 mx-auto rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center mb-1.5"><i class="fas fa-wallet"></i></div>
-                    <span class="text-[10px] font-bold text-slate-700">E-Wallet</span>
+                    <span class="text-[10px] font-bold text-slate-700">E-Money</span>
+                </div>
+                <div onclick="filterCategory('pln')" id="menu-pln" class="menu-cat bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition">
+                    <div class="w-10 h-10 mx-auto rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center mb-1.5"><i class="fas fa-lightbulb"></i></div>
+                    <span class="text-[10px] font-bold text-slate-700">PLN</span>
                 </div>
             </div>
 
-            <!-- Tempat Produk Digiflazz Muncul -->
+            <!-- Grid Produk Dinamis dengan Auto-Logo -->
             <div class="mb-6">
                 <div id="dynamicCatalogGrid" class="grid grid-cols-2 gap-3">
                     <div class="col-span-2 text-center text-xs text-slate-400 py-6"><i class="fas fa-spinner fa-spin mr-1"></i> Memuat produk...</div>
@@ -73,7 +73,9 @@
         <!-- VIEW 2: FORM CHECKOUT DETAIL -->
         <div id="viewCheckout" class="hidden fade-in">
             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-4 flex items-center gap-3">
-                <div class="w-12 h-12 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xl"><i class="fas fa-cart-shopping"></i></div>
+                <div id="checkoutLogoContainer" class="w-12 h-12 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xl overflow-hidden p-1">
+                    <i class="fas fa-cart-shopping"></i>
+                </div>
                 <div>
                     <h2 id="checkoutTitle" class="font-bold text-slate-800 text-sm">Nama Produk</h2>
                     <p class="text-[10px] text-emerald-600 font-medium"><i class="fas fa-check-circle"></i> Proses Otomatis via API</p>
@@ -118,6 +120,26 @@
     </div>
 
     <script>
+        // Fungsi untuk narik logo otomatis berdasarkan nama brand
+        function getBrandLogo(brandName) {
+            const b = brandName.toUpperCase();
+            if (b.includes('TELKOMSEL')) return 'https://upload.wikimedia.org/wikipedia/commons/9/9b/Telkomsel_2021.svg';
+            if (b.includes('INDOSAT')) return 'https://upload.wikimedia.org/wikipedia/commons/1/15/Indosat_Ooredoo_Hutchison_logo.svg';
+            if (b.includes('AXIS')) return 'https://upload.wikimedia.org/wikipedia/commons/7/7b/Axis_Logo_2015.svg';
+            if (b.includes('SMARTFREN')) return 'https://upload.wikimedia.org/wikipedia/commons/1/1a/Smartfren_2018.svg';
+            if (b.includes('TRI') || b.includes('3')) return 'https://upload.wikimedia.org/wikipedia/commons/3/3d/Tri_logo_%282021%29.svg';
+            if (b.includes('XL')) return 'https://upload.wikimedia.org/wikipedia/commons/e/ee/XL_Logo_2016.svg';
+            if (b.includes('BY.U')) return 'https://upload.wikimedia.org/wikipedia/commons/9/94/By.U_logo.svg';
+            if (b.includes('MOBILE LEGENDS')) return 'https://upload.wikimedia.org/wikipedia/commons/6/6f/Mobile_Legends_Bang_Bang_logo.png';
+            if (b.includes('FREE FIRE')) return 'https://upload.wikimedia.org/wikipedia/commons/4/47/Free_Fire_Logo.png';
+            if (b.includes('GO PAY')) return 'https://upload.wikimedia.org/wikipedia/commons/8/86/Gopay_logo.svg';
+            if (b.includes('OVO')) return 'https://upload.wikimedia.org/wikipedia/commons/e/eb/Logo_ovo_purple.svg';
+            if (b.includes('DANA')) return 'https://upload.wikimedia.org/wikipedia/commons/7/72/Logo_dana_blue.svg';
+            if (b.includes('SHOPEE')) return 'https://upload.wikimedia.org/wikipedia/commons/f/fe/Shopee.svg';
+            if (b.includes('PLN')) return 'https://upload.wikimedia.org/wikipedia/commons/9/9e/PLN_Logo.svg';
+            return null; // Fallback ke icon biasa kalau tidak ketemu
+        }
+
         async function filterCategory(categoryName) {
             document.querySelectorAll('.menu-cat').forEach(el => el.classList.remove('bg-blue-50', 'border-blue-500'));
             const activeMenu = document.getElementById('menu-' + categoryName);
@@ -135,15 +157,22 @@
                 const brands = await res.json();
 
                 if (Array.isArray(brands) && brands.length > 0) {
-                    container.innerHTML = brands.map(b => `
-                        <div onclick="openCheckout('${b}', '${categoryName}')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center"><i class="fas fa-bolt"></i></div>
-                            <div>
-                                <p class="text-xs font-bold text-slate-800 truncate">${b}</p>
-                                <p class="text-[10px] text-slate-400">Otomatis 24 Jam</p>
+                    container.innerHTML = brands.map(b => {
+                        const logoUrl = getBrandLogo(b);
+                        const iconHtml = logoUrl 
+                            ? `<img src="${logoUrl}" class="w-full h-full object-contain" alt="${b}">` 
+                            : `<i class="fas fa-bolt text-blue-600"></i>`;
+
+                        return `
+                            <div onclick="openCheckout('${b}', '${categoryName}')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center p-1.5 shrink-0">${iconHtml}</div>
+                                <div class="overflow-hidden">
+                                    <p class="text-xs font-bold text-slate-800 truncate">${b}</p>
+                                    <p class="text-[10px] text-slate-400">Otomatis 24 Jam</p>
+                                </div>
                             </div>
-                        </div>
-                    `).join('');
+                        `;
+                    }).join('');
                 } else {
                     container.innerHTML = `<div class="col-span-2 text-center text-xs text-red-500 py-6">Tidak ada produk aktif di kategori ini.</div>`;
                 }
@@ -168,9 +197,18 @@
             
             document.getElementById('checkoutTitle').innerText = brandName;
             
+            // Set logo di header checkout juga
+            const logoContainer = document.getElementById('checkoutLogoContainer');
+            const logoUrl = getBrandLogo(brandName);
+            if (logoUrl) {
+                logoContainer.innerHTML = `<img src="${logoUrl}" class="w-full h-full object-contain bg-white rounded" alt="${brandName}">`;
+            } else {
+                logoContainer.innerHTML = `<i class="fas fa-cart-shopping"></i>`;
+            }
+            
             const label = document.getElementById('inputLabelText');
-            if(categoryType === 'game') label.innerText = "Masukkan User ID / Zone ID";
-            else if(categoryType === 'token') label.innerText = "Masukkan Nomor Meter / ID Pelanggan PLN";
+            if(categoryType === 'games') label.innerText = "Masukkan User ID / Zone ID";
+            else if(categoryType === 'pln') label.innerText = "Masukkan Nomor Meter / ID Pelanggan PLN";
             else label.innerText = "Masukkan Nomor HP / Akun Tujuan";
 
             const container = document.getElementById('nominalOptions');
