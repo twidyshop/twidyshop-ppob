@@ -7,21 +7,19 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// Agar file index.html dan aset frontend terbaca di Render
 app.use(express.static(path.join(__dirname, 'public')));
 
 let cachedProducts = null;
 let cacheTimestamp = 0;
-const CACHE_DURATION = 5 * 60 * 1000; // Cache 5 menit
+const CACHE_DURATION = 5 * 60 * 1000; 
 
-// Endpoint Ambil Produk Digiflazz
 app.post('/api/get-products', async (req, res) => {
     const { brand, category } = req.body; 
     const username = process.env.DIGIFLAZZ_USERNAME;
     const apiKey = process.env.DIGIFLAZZ_API_KEY;
 
     if (!username || !apiKey) {
-        return res.status(500).json({ message: 'API Key Digiflazz belum diatur di Environment Variables Render' });
+        return res.status(500).json({ message: 'API Key Digiflazz belum diatur' });
     }
 
     try {
@@ -45,7 +43,7 @@ app.post('/api/get-products', async (req, res) => {
                 cachedProducts = data; 
                 cacheTimestamp = now;  
             } else {
-                return res.status(400).json({ message: 'Gagal ambil data dari pusat Digiflazz' });
+                return res.status(400).json({ message: 'Gagal ambil data dari pusat' });
             }
         }
 
@@ -58,15 +56,8 @@ app.post('/api/get-products', async (req, res) => {
             let isBrandMatch = itemBrand.includes(targetBrand) || itemName.includes(targetBrand);
             if (!isBrandMatch) return false;
 
-            // Filter ketat agar kategori pulsa tidak nyampur dengan paket data / telepon
             if (category === 'pulsa') {
-                if (itemName.includes('DATA') || 
-                    itemName.includes('INTERNET') || 
-                    itemName.includes('VOUCHER') || 
-                    itemName.includes('WIFI') || 
-                    itemName.includes('PAKET') || 
-                    itemName.includes('TELPON') || 
-                    itemName.includes('TELEPON')) {
+                if (itemName.includes('DATA') || itemName.includes('INTERNET') || itemName.includes('VOUCHER') || itemName.includes('PAKET')) {
                     return false;
                 }
             }
@@ -80,12 +71,10 @@ app.post('/api/get-products', async (req, res) => {
 
         filtered.sort((a, b) => a.price - b.price);
 
-        const marginProfit = 200; // Profit promo Rp 200
-        
         const products = filtered.map(p => ({
             sku: p.buyer_sku_code,
             name: p.product_name,
-            price: p.price + marginProfit
+            price: p.price + 200 // Profit promo Rp 200
         }));
 
         return res.status(200).json(products);
