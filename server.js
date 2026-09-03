@@ -2,29 +2,42 @@ const express = require('express');
 const crypto = require('crypto');
 const cors = require('cors');
 const path = require('path');
+const sqlite3 = require('sqlite3').verbose(); // Tambahan untuk database permanen
 
 const app = express();
 app.use(express.json());
 app.use(cors());
-
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Inisialisasi Database SQLite
+const db = new sqlite3.Database('./twidyshop_transactions.db', (err) => {
+    if (err) console.error("Gagal membuka database:", err.message);
+    else {
+        db.run(`CREATE TABLE IF NOT EXISTS transactions (
+            order_id TEXT PRIMARY KEY,
+            target_id TEXT,
+            product_code TEXT,
+            product_name TEXT,
+            amount INTEGER,
+            status TEXT,
+            sn TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`);
+        console.log("Database siap.");
+    }
+});
 
 let cachedProducts = null;
 let cacheTimestamp = 0;
 const CACHE_DURATION = 5 * 60 * 1000; 
 
-// Database memori sementara untuk menyimpan riwayat transaksi (Aman untuk cek status global)
-const transactionDB = {};
-
-// 1. Endpoint Ambil Produk Digiflazz
+// 1. Endpoint Ambil Produk Digiflazz (Filter Diperketat)
 app.post('/api/get-products', async (req, res) => {
     const { brand, category } = req.body; 
     const username = process.env.DIGIFLAZZ_USERNAME;
     const apiKey = process.env.DIGIFLAZZ_API_KEY;
 
-    if (!username || !apiKey) {
-        return res.status(500).json({ message: 'API Key Digiflazz belum diatur' });
-    }
+    if (!username || !apiKey) return res.status(500).json({ message: 'API Key Digiflazz belum diatur' });
 
     try {
         const now = Date.now();
@@ -51,48 +64,36 @@ app.post('/api/get-products', async (req, res) => {
             }
         }
 
-        let targetBrand = (brand || "").trim().toUpperCase();
+        let targetBrand = (brand || "").trim().toUpperCase().replace(/\s+/g, ''); // Hapus spasi untuk pencocokan (GOPAY = GO PAY)
 
         let filtered = data.filter(item => {
-            let itemBrand = (item.brand || "").trim().toUpperCase();
+            if (!item.buyer_product_status || item.buyer_product_status === false || item.buyer_product_status === '0') return false;
+
+            let itemBrand = (item.brand || "").trim().toUpperCase().replace(/\s+/g, '');
             let itemName = (item.product_name || "").toUpperCase();
             
-            let isMatch = false;
-            if (targetBrand === 'TELKOMSEL') {
-                isMatch = itemBrand.includes('TELKOMSEL') || itemBrand.includes('TSEL') || itemName.includes('TELKOMSEL') || itemName.includes('TSEL');
-            } else if (targetBrand === 'INDOSAT') {
-                isMatch = itemBrand.includes('INDOSAT') || itemBrand.includes('ISAT') || itemName.includes('INDOSAT') || itemName.includes('ISAT');
-            } else if (targetBrand === 'TRI') {
-                isMatch = itemBrand.includes('TRI') || itemBrand === '3' || itemName.includes('TRI');
-            } else {
-                isMatch = itemBrand.includes(targetBrand) || itemName.includes(targetBrand);
-            }
-
+            // Pencocokan Merek yang Ketat
+            let isMatch = (itemBrand === targetBrand) || (itemBrand.includes(targetBrand));
             if (!isMatch) return false;
 
+            // Filter Kategori agar tidak nyasar
             if (category === 'pulsa') {
-                if (itemName.includes('VOUCHER') || itemName.includes('WIFI')) {
-                    return false;
-                }
-            }
-
-            if (item.buyer_product_status === false || item.buyer_product_status === 0 || item.buyer_product_status === '0') {
-                return false; 
+                if (itemName.includes('DATA') || itemName.includes('VOUCHER') || itemName.includes('WIFI') || itemName.includes('MASA AKTIF')) return false;
+            } else if (category === 'pln') {
+                if (!itemName.includes('TOKEN') && !itemName.includes('PLN')) return false;
             }
 
             return true;
         });
 
         filtered.sort((a, b) => a.price - b.price);
-
         const products = filtered.map(p => ({
             sku: p.buyer_sku_code,
             name: p.product_name,
-            price: p.price + 200 // Profit markup Rp 200
+            price: p.price + 200 // Profit markup Rp 200 (Bisa disesuaikan)
         }));
 
         return res.status(200).json(products);
-        
     } catch (error) {
         return res.status(500).json({ message: 'Server error: ' + error.message });
     }
@@ -102,33 +103,22 @@ app.post('/api/get-products', async (req, res) => {
 app.post('/api/create-transaction', async (req, res) => {
     try {
         const { targetId, productCode, price, productName } = req.body;
-
-        if (!targetId || !productCode || !price) {
-            return res.status(400).json({ message: 'Target ID, Produk, dan Harga wajib diisi!' });
-        }
+        if (!targetId || !productCode || !price) return res.status(400).json({ message: 'Data tidak lengkap!' });
 
         const orderId = `TW_${productCode}_${Date.now()}`;
         const amount = parseInt(price);
-
-        // Simpan data awal transaksi ke database memori lokal
-        transactionDB[orderId] = {
-            order_id: orderId,
-            target_id: targetId,
-            product_code: productCode,
-            product_name: productName || productCode,
-            amount: amount,
-            status: 'PENDING',
-            created_at: new Date().toISOString(),
-            sn: '-'
-        };
-
         const midtransServerKey = process.env.MIDTRANS_SERVER_KEY;
-        if (!midtransServerKey) {
-            return res.status(500).json({ message: 'MIDTRANS_SERVER_KEY belum diset di Render!' });
-        }
+
+        if (!midtransServerKey) return res.status(500).json({ message: 'MIDTRANS_SERVER_KEY belum diset!' });
+
+        // Simpan ke SQLite
+        db.run(`INSERT INTO transactions (order_id, target_id, product_code, product_name, amount, status, sn) 
+                VALUES (?, ?, ?, ?, ?, ?, ?)`, 
+                [orderId, targetId, productCode, productName, amount, 'PENDING', '-'], (err) => {
+            if (err) console.error("Gagal simpan DB:", err.message);
+        });
 
         const authString = Buffer.from(midtransServerKey + ':').toString('base64');
-
         const midtransResponse = await fetch('https://app.midtrans.com/snap/v1/transactions', {
             method: 'POST',
             headers: {
@@ -137,146 +127,75 @@ app.post('/api/create-transaction', async (req, res) => {
                 'Authorization': `Basic ${authString}`
             },
             body: JSON.stringify({
-                transaction_details: {
-                    order_id: orderId,
-                    gross_amount: amount
-                },
-                customer_details: {
-                    first_name: "Customer",
-                    last_name: targetId 
-                },
-                item_details: [{
-                    id: productCode,
-                    price: amount,
-                    quantity: 1,
-                    name: productName || `Top Up ${productCode}`
-                }]
+                transaction_details: { order_id: orderId, gross_amount: amount },
+                customer_details: { first_name: "Customer", last_name: targetId },
+                item_details: [{ id: productCode, price: amount, quantity: 1, name: productName }]
             })
         });
 
         const midtransData = await midtransResponse.json();
+        if (!midtransResponse.ok) return res.status(400).json({ message: 'Gagal membuat transaksi Midtrans', error: midtransData });
 
-        if (!midtransResponse.ok) {
-            return res.status(400).json({ message: 'Gagal membuat transaksi Midtrans', error: midtransData });
-        }
-
-        return res.status(200).json({
-            token: midtransData.token,
-            redirect_url: midtransData.redirect_url,
-            order_id: orderId
-        });
-
+        return res.status(200).json({ token: midtransData.token, order_id: orderId });
     } catch (error) {
         return res.status(500).json({ message: 'Server error: ' + error.message });
     }
 });
 
-// 3. Endpoint Cek Status Transaksi Global (Dipakai menu Cek Status Frontend)
+// 3. Endpoint Cek Status Transaksi (Riwayat)
 app.get('/api/check-status/:query', (req, res) => {
-    const query = req.params.query.trim().toLowerCase();
+    const query = `%${req.params.query.trim()}%`;
     
-    let matched = Object.values(transactionDB).filter(trx => {
-        return trx.order_id.toLowerCase().includes(query) || trx.target_id.toLowerCase().includes(query);
+    db.all(`SELECT * FROM transactions WHERE order_id LIKE ? OR target_id LIKE ? ORDER BY created_at DESC LIMIT 10`, [query, query], (err, rows) => {
+        if (err) return res.status(500).json({ success: false, message: 'Database error' });
+        if (rows.length > 0) return res.status(200).json({ success: true, data: rows });
+        return res.status(404).json({ success: false, message: 'Riwayat tidak ditemukan.' });
     });
-
-    // Urutkan dari yang paling baru
-    matched.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-    if (matched.length > 0) {
-        return res.status(200).json({ success: true, data: matched });
-    } else {
-        return res.status(404).json({ success: false, message: 'Tidak ditemukan riwayat transaksi untuk pencarian tersebut.' });
-    }
 });
 
 // 4. Endpoint Webhook Midtrans & Eksekusi Digiflazz
-app.get('/api/webhook', (req, res) => {
-    return res.status(200).json({ status: "OK", message: "Webhook endpoint is active." });
-});
-
 app.post('/api/webhook', async (req, res) => {
     try {
         const notification = req.body;
-        
-        if (!notification || !notification.transaction_status) {
-            return res.status(200).json({ status: "OK", message: "Webhook ping received." });
-        }
+        if (!notification || !notification.transaction_status) return res.status(200).send("OK");
 
-        const transactionStatus = notification.transaction_status;
-        const fraudStatus = notification.fraud_status;
-        const orderId = notification.order_id;
+        const { transaction_status: transactionStatus, fraud_status: fraudStatus, order_id: orderId } = notification;
 
         if (transactionStatus === 'settlement' || (transactionStatus === 'capture' && fraudStatus === 'accept')) {
-            if (transactionDB[orderId]) {
-                transactionDB[orderId].status = 'SUCCESS (PROCESSING)';
-            }
+            // Update status processing
+            db.run(`UPDATE transactions SET status = 'PROCESSING' WHERE order_id = ?`, [orderId]);
 
-            let targetId = '';
-            if (notification.customer_details) {
-                const fullName = notification.customer_details.full_name || '';
-                const parts = fullName.split(' ');
-                targetId = parts.length > 1 ? parts[parts.length - 1] : fullName;
-                if (!targetId) targetId = notification.customer_details.last_name || '';
-            }
+            // Ambil data untuk Digiflazz dari DB
+            db.get(`SELECT target_id, product_code FROM transactions WHERE order_id = ?`, [orderId], async (err, row) => {
+                if (err || !row) return;
 
-            let buyerSkuCode = '';
-            if (orderId && orderId.includes('_')) {
-                const orderParts = orderId.split('_');
-                if (orderParts.length >= 3) {
-                    buyerSkuCode = orderParts[1];
+                const username = process.env.DIGIFLAZZ_USERNAME;
+                const apiKey = process.env.DIGIFLAZZ_API_KEY;
+                const sign = crypto.createHash('md5').update(username + apiKey + orderId).digest('hex');
+
+                const digiflazzResponse = await fetch('https://api.digiflazz.com/v1/transaction', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: username,
+                        buyer_sku_code: row.product_code,
+                        customer_no: row.target_id,
+                        ref_id: orderId,
+                        sign: sign
+                    })
+                });
+
+                const digiflazzResult = await digiflazzResponse.json();
+                if (digiflazzResult && digiflazzResult.data) {
+                    db.run(`UPDATE transactions SET status = ?, sn = ? WHERE order_id = ?`, 
+                        [digiflazzResult.data.status, digiflazzResult.data.sn || '-', orderId]);
                 }
-            }
-
-            const username = process.env.DIGIFLAZZ_USERNAME;
-            const apiKey = process.env.DIGIFLAZZ_API_KEY;
-
-            if (!username || !apiKey || !buyerSkuCode || !targetId) {
-                console.error("Webhook Gagal: Data tidak lengkap", { buyerSkuCode, targetId });
-                return res.status(200).json({ message: 'Data webhook tidak lengkap' });
-            }
-
-            const refId = orderId;
-            const sign = crypto.createHash('md5').update(username + apiKey + refId).digest('hex');
-
-            const digiflazzResponse = await fetch('https://api.digiflazz.com/v1/transaction', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    username: username,
-                    buyer_sku_code: buyerSkuCode,
-                    customer_no: targetId,
-                    ref_id: refId,
-                    sign: sign
-                })
             });
-
-            const digiflazzResult = await digiflazzResponse.json();
-            console.log("HASIL DIGIFLAZZ:", digiflazzResult);
-
-            if (digiflazzResult && digiflazzResult.data) {
-                const statusPusat = digiflazzResult.data.status;
-                const serialNumber = digiflazzResult.data.sn || '-';
-                
-                if (transactionDB[orderId]) {
-                    transactionDB[orderId].status = statusPusat;
-                    transactionDB[orderId].sn = serialNumber;
-                }
-            }
-
-            return res.status(200).json({
-                status: "Processed to Digiflazz",
-                digiflazz_response: digiflazzResult
-            });
-        } else if (transactionStatus === 'cancel' || transactionStatus === 'expire' || transactionStatus === 'deny') {
-            if (transactionDB[orderId]) {
-                transactionDB[orderId].status = 'FAILED / EXPIRED';
-            }
+        } else if (['cancel', 'expire', 'deny'].includes(transactionStatus)) {
+            db.run(`UPDATE transactions SET status = 'FAILED' WHERE order_id = ?`, [orderId]);
         }
-
         return res.status(200).json({ message: "Status handled." });
-
     } catch (error) {
-        console.error("WEBHOOK EXCEPTION:", error);
         return res.status(200).json({ message: 'Error: ' + error.message });
     }
 });
