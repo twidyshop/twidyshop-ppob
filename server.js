@@ -9,9 +9,10 @@ app.use(express.json());
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Cache diubah jadi 1 menit agar cepat sinkron saat lu tambah produk baru di Digiflazz
 let cachedProducts = null;
 let cacheTimestamp = 0;
-const CACHE_DURATION = 5 * 60 * 1000; 
+const CACHE_DURATION = 1 * 60 * 1000; 
 
 const DB_FILE = path.join(__dirname, 'database.json');
 let transactionDB = {};
@@ -29,7 +30,6 @@ function saveDB() {
 
 async function fetchDigiflazzProducts(username, apiKey) {
     const now = Date.now();
-    // Jika cache masih ada dan belum 5 menit, pakai cache. Jika sudah, ambil data baru!
     if (cachedProducts && (now - cacheTimestamp < CACHE_DURATION)) {
         return cachedProducts;
     }
@@ -43,15 +43,15 @@ async function fetchDigiflazzProducts(username, apiKey) {
     const raw = await res.json();
     if (raw.data && Array.isArray(raw.data)) {
         cachedProducts = raw.data;
-        cacheTimestamp = now; // Perbarui timestamp cache
+        cacheTimestamp = now;
         return cachedProducts;
     }
     return cachedProducts || [];
 }
 
-// 1. Endpoint Ambil Brand dengan Filter Kategori Ketat & Bersih
+// 1. Endpoint Ambil Brand Berdasarkan Kategori Asli Digiflazz
 app.get('/api/get-brands/:category', async (req, res) => {
-    const category = req.params.category.toLowerCase();
+    const category = req.params.category.toLowerCase(); // 'pulsa', 'games', 'emoney', 'pln'
     const username = process.env.DIGIFLAZZ_USERNAME;
     const apiKey = process.env.DIGIFLAZZ_API_KEY;
 
@@ -63,21 +63,24 @@ app.get('/api/get-brands/:category', async (req, res) => {
         let filtered = data.filter(item => {
             if (item.buyer_product_status === false || item.buyer_product_status === 0 || item.buyer_product_status === '0') return false;
             
-            let cat = (item.category || "").toLowerCase();
-            let brand = (item.brand || "").toLowerCase();
-            let name = (item.product_name || "").toLowerCase();
+            let cat = (item.category || "").toLowerCase(); // Kategori asli dari Digiflazz
 
             if (category === 'games') {
-                return cat.includes('game') || brand.includes('ml') || brand.includes('ff') || brand.includes('pubg') || brand.includes('genshin') || name.includes('diamond') || name.includes('uc') || name.includes('valorant');
+                return cat.includes('game');
             } else if (category === 'emoney') {
-                return cat.includes('e-money') || cat.includes('wallet') || brand.includes('dana') || brand.includes('ovo') || brand.includes('gopay') || brand.includes('shopee') || brand.includes('linkaja') || name.includes('gopay') || name.includes('ovo') || name.includes('dana') || name.includes('shopeepay');
+                return cat.includes('e-money') || cat.includes('emoney') || cat.includes('wallet');
             } else if (category === 'pln') {
-                return cat.includes('pln') || brand.includes('pln') || name.includes('token');
+                return cat.includes('pln');
             } else if (category === 'pulsa') {
-                return (cat.includes('pulsa') || brand.includes('telkomsel') || brand.includes('indosat') || brand.includes('xl') || brand.includes('axis') || brand.includes('tri') || brand.includes('smartfren') || brand.includes('by.u')) && !name.includes('voucher') && !name.includes('wifi') && !name.includes('paket');
+                return cat.includes('pulsa') || cat.includes('data');
             }
             return false;
         });
+
+        // Jika karena suatu hal kategori spesifik tidak tembus, ambil universal brand yang aktif
+        if (filtered.length === 0) {
+            filtered = data.filter(item => item.buyer_product_status !== false && item.buyer_product_status !== 0);
+        }
 
         let brandsSet = [...new Set(filtered.map(i => (i.brand || "").toUpperCase()))].filter(b => b !== "").sort();
         return res.status(200).json(brandsSet);
