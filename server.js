@@ -9,10 +9,9 @@ app.use(express.json());
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Cache diubah jadi 1 menit agar cepat sinkron saat lu tambah produk baru di Digiflazz
 let cachedProducts = null;
 let cacheTimestamp = 0;
-const CACHE_DURATION = 1 * 60 * 1000; 
+const CACHE_DURATION = 30 * 1000; // 30 detik agar produk baru cepat sinkron
 
 const DB_FILE = path.join(__dirname, 'database.json');
 let transactionDB = {};
@@ -49,9 +48,9 @@ async function fetchDigiflazzProducts(username, apiKey) {
     return cachedProducts || [];
 }
 
-// 1. Endpoint Ambil Brand Berdasarkan Kategori Asli Digiflazz
+// 1. Endpoint Pencocokan Kategori Persis Sesuai Tab Digiflazz Lu
 app.get('/api/get-brands/:category', async (req, res) => {
-    const category = req.params.category.toLowerCase(); // 'pulsa', 'games', 'emoney', 'pln'
+    const category = req.params.category.toLowerCase(); // dari frontend: pulsa, games, emoney, pln
     const username = process.env.DIGIFLAZZ_USERNAME;
     const apiKey = process.env.DIGIFLAZZ_API_KEY;
 
@@ -63,21 +62,26 @@ app.get('/api/get-brands/:category', async (req, res) => {
         let filtered = data.filter(item => {
             if (item.buyer_product_status === false || item.buyer_product_status === 0 || item.buyer_product_status === '0') return false;
             
-            let cat = (item.category || "").toLowerCase(); // Kategori asli dari Digiflazz
+            // Ambil kategori asli dari Digiflazz, bersihkan jadi huruf kecil
+            let cat = (item.category || "").toLowerCase().trim();
 
             if (category === 'games') {
-                return cat.includes('game');
+                // Sesuai tab 'Games' di digiflazz
+                return cat === 'games' || cat.includes('game');
             } else if (category === 'emoney') {
-                return cat.includes('e-money') || cat.includes('emoney') || cat.includes('wallet');
+                // Sesuai tab 'E-Money' di digiflazz (bisa ada strip atau spasi)
+                return cat === 'e-money' || cat === 'emoney' || cat.includes('e-money') || cat.includes('emoney') || cat.includes('wallet');
             } else if (category === 'pln') {
-                return cat.includes('pln');
+                // Sesuai tab 'PLN' di digiflazz
+                return cat === 'pln' || cat.includes('pln');
             } else if (category === 'pulsa') {
-                return cat.includes('pulsa') || cat.includes('data');
+                // Sesuai tab 'Pulsa' atau 'Data' di digiflazz
+                return cat === 'pulsa' || cat === 'data' || cat.includes('pulsa') || cat.includes('data');
             }
             return false;
         });
 
-        // Jika karena suatu hal kategori spesifik tidak tembus, ambil universal brand yang aktif
+        // Fallback pengaman jika kategori spesifik kosong, tampilkan seluruh brand aktif
         if (filtered.length === 0) {
             filtered = data.filter(item => item.buyer_product_status !== false && item.buyer_product_status !== 0);
         }
