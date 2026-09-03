@@ -9,6 +9,7 @@ app.use(express.json());
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// ==== DATABASE SEMENTARA JSON ====
 const dbFile = path.join(__dirname, 'transactions.json');
 
 const readDB = () => {
@@ -22,7 +23,7 @@ const readDB = () => {
 };
 
 const saveDB = (data) => {
-    const limitedData = data.slice(-50);
+    const limitedData = data.slice(-50); // Simpan 50 terakhir
     fs.writeFileSync(dbFile, JSON.stringify(limitedData, null, 2));
 };
 
@@ -30,7 +31,7 @@ let cachedProducts = null;
 let cacheTimestamp = 0;
 const CACHE_DURATION = 5 * 60 * 1000; 
 
-// 1. Endpoint Ambil Produk (Filter Lebih Longgar untuk GoPay & PUBG)
+// 1. Endpoint Ambil Produk (Pencarian Cerdas Anti Nyasar)
 app.post('/api/get-products', async (req, res) => {
     const { brand, category } = req.body; 
     const username = process.env.DIGIFLAZZ_USERNAME;
@@ -62,24 +63,20 @@ app.post('/api/get-products', async (req, res) => {
             }
         }
 
-        let targetBrand = (brand || "").trim().toUpperCase().replace(/\s+/g, '');
+        // Hapus SEMUA spasi dan simbol, jadikan huruf besar semua untuk dicocokkan
+        let targetBrand = (brand || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
 
         let filtered = data.filter(item => {
             if (!item.buyer_product_status || item.buyer_product_status === false || item.buyer_product_status === '0') return false;
 
-            let itemBrand = (item.brand || "").trim().toUpperCase().replace(/\s+/g, '');
-            let itemName = (item.product_name || "").toUpperCase().replace(/\s+/g, '');
+            let itemBrand = (item.brand || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+            let itemName = (item.product_name || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
             
-            // Pencocokan fleksibel untuk GoPay, PUBG, dll
+            // Cek kecocokan (sekarang GO-PAY dan GOPAY akan dianggap sama)
             let isMatch = itemBrand.includes(targetBrand) || itemName.includes(targetBrand);
-            
-            // Kasus khusus GoPay / E-Money
-            if (targetBrand === 'GOPAY' && (itemName.includes('GO-PAY') || itemName.includes('GOPAY'))) isMatch = true;
-            // Kasus khusus PUBG
-            if (targetBrand === 'PUBG' && itemName.includes('PUBG')) isMatch = true;
-
             if (!isMatch) return false;
 
+            // Filter agar produk data/voucher tidak nyasar ke pulsa reguler
             if (category === 'pulsa') {
                 if (itemName.includes('DATA') || itemName.includes('VOUCHER') || itemName.includes('WIFI') || itemName.includes('MASAAKTIF')) return false;
             } else if (category === 'pln') {
@@ -93,7 +90,7 @@ app.post('/api/get-products', async (req, res) => {
         const products = filtered.map(p => ({
             sku: p.buyer_sku_code,
             name: p.product_name,
-            price: p.price + 200 
+            price: p.price + 200 // Keuntungan bisa kamu ubah di sini
         }));
 
         return res.status(200).json(products);
@@ -151,7 +148,7 @@ app.post('/api/create-transaction', async (req, res) => {
     }
 });
 
-// 3. Endpoint Cek Status
+// 3. Endpoint Cek Status Riwayat
 app.get('/api/check-status/:query?', (req, res) => {
     const query = (req.params.query || '').trim().toLowerCase();
     const db = readDB();
@@ -173,9 +170,9 @@ app.get('/api/check-status/:query?', (req, res) => {
     }
 });
 
-// 4. Endpoint Webhook Midtrans & Eksekusi Digiflazz (Diberikan Log untuk Debugging)
+// 4. Endpoint Webhook Midtrans & Eksekusi Digiflazz
 app.post('/api/webhook', async (req, res) => {
-    console.log("WEBHOOK HIT RECEIVED:", JSON.stringify(req.body));
+    console.log("WEBHOOK MASUK DARI MIDTRANS:", JSON.stringify(req.body)); // Bukti log
     try {
         const notification = req.body;
         if (!notification || !notification.transaction_status) return res.status(200).send("OK");
@@ -186,10 +183,11 @@ app.post('/api/webhook', async (req, res) => {
         let trxIndex = db.findIndex(t => t.order_id === orderId);
         
         if (trxIndex === -1) {
-            console.log("Webhook Error: Order ID tidak ditemukan di database lokal:", orderId);
-            return res.status(200).send("Order not found in local db");
+            console.log("Pesanan tidak ditemukan di database lokal. Mungkin server habis restart.");
+            return res.status(200).send("Order not found");
         }
 
+        // Jika dibayar
         if (transactionStatus === 'settlement' || (transactionStatus === 'capture' && fraudStatus === 'accept')) {
             db[trxIndex].status = 'PROCESSING';
             saveDB(db);
@@ -211,7 +209,7 @@ app.post('/api/webhook', async (req, res) => {
             });
 
             const digiflazzResult = await digiflazzResponse.json();
-            console.log("DIGIFLAZZ EXECUTION RESULT:", digiflazzResult);
+            console.log("HASIL DIGIFLAZZ:", digiflazzResult);
             
             if (digiflazzResult && digiflazzResult.data) {
                 db = readDB();
@@ -221,12 +219,13 @@ app.post('/api/webhook', async (req, res) => {
                 saveDB(db);
             }
         } else if (['cancel', 'expire', 'deny'].includes(transactionStatus)) {
+            // Jika batal/kedaluwarsa
             db[trxIndex].status = 'FAILED';
             saveDB(db);
         }
         return res.status(200).json({ message: "Status handled." });
     } catch (error) {
-        console.error("WEBHOOK EXCEPTION ERROR:", error);
+        console.error("WEBHOOK ERROR:", error);
         return res.status(200).json({ message: 'Error: ' + error.message });
     }
 });
