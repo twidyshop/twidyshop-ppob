@@ -9,10 +9,6 @@ app.use(express.json());
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
 
-let cachedProducts = null;
-let cacheTimestamp = 0;
-const CACHE_DURATION = 5 * 60 * 1000; 
-
 const DB_FILE = path.join(__dirname, 'database.json');
 let transactionDB = {};
 
@@ -27,10 +23,8 @@ function saveDB() {
     try { fs.writeFileSync(DB_FILE, JSON.stringify(transactionDB, null, 2)); } catch (e) {}
 }
 
+// AMBIL DATA REAL-TIME LANGSUNG TANPA CACHE
 async function fetchDigiflazzProducts(username, apiKey) {
-    const now = Date.now();
-    if (cachedProducts && (now - cacheTimestamp < CACHE_DURATION)) return cachedProducts;
-    
     const sign = crypto.createHash('md5').update(username + apiKey + 'pricelist').digest('hex');
     const res = await fetch('https://api.digiflazz.com/v1/price-list', {
         method: 'POST',
@@ -39,9 +33,7 @@ async function fetchDigiflazzProducts(username, apiKey) {
     });
     const raw = await res.json();
     if (raw.data && Array.isArray(raw.data)) {
-        cachedProducts = raw.data;
-        cacheTimestamp = now;
-        return cachedProducts;
+        return raw.data;
     }
     return [];
 }
