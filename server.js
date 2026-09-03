@@ -11,7 +11,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 let cachedProducts = null;
 let cacheTimestamp = 0;
-const CACHE_DURATION = 5 * 60 * 1000; 
+const CACHE_DURATION = 1 * 60 * 1000; 
 
 // 1. Endpoint Ambil Produk Digiflazz
 app.post('/api/get-products', async (req, res) => {
