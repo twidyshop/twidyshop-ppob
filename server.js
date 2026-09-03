@@ -9,7 +9,6 @@ app.use(express.json());
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ==== FUNGSI DATABASE JSON ====
 const dbFile = path.join(__dirname, 'transactions.json');
 
 const readDB = () => {
@@ -23,16 +22,15 @@ const readDB = () => {
 };
 
 const saveDB = (data) => {
-    const limitedData = data.slice(-50); // Simpan 50 terakhir agar ringan
+    const limitedData = data.slice(-50);
     fs.writeFileSync(dbFile, JSON.stringify(limitedData, null, 2));
 };
-// ===============================
 
 let cachedProducts = null;
 let cacheTimestamp = 0;
 const CACHE_DURATION = 5 * 60 * 1000; 
 
-// 1. Endpoint Ambil Produk Digiflazz
+// 1. Endpoint Ambil Produk (Filter Lebih Longgar untuk GoPay & PUBG)
 app.post('/api/get-products', async (req, res) => {
     const { brand, category } = req.body; 
     const username = process.env.DIGIFLAZZ_USERNAME;
@@ -55,7 +53,6 @@ app.post('/api/get-products', async (req, res) => {
             });
 
             const rawData = await digiflazzResponse.json();
-            
             if (rawData.data && Array.isArray(rawData.data)) {
                 data = rawData.data;
                 cachedProducts = data; 
@@ -71,10 +68,16 @@ app.post('/api/get-products', async (req, res) => {
             if (!item.buyer_product_status || item.buyer_product_status === false || item.buyer_product_status === '0') return false;
 
             let itemBrand = (item.brand || "").trim().toUpperCase().replace(/\s+/g, '');
-            // Filter tambahan: Cek juga dari nama produk untuk mengatasi ketidaksesuaian brand dari pusat
             let itemName = (item.product_name || "").toUpperCase().replace(/\s+/g, '');
             
+            // Pencocokan fleksibel untuk GoPay, PUBG, dll
             let isMatch = itemBrand.includes(targetBrand) || itemName.includes(targetBrand);
+            
+            // Kasus khusus GoPay / E-Money
+            if (targetBrand === 'GOPAY' && (itemName.includes('GO-PAY') || itemName.includes('GOPAY'))) isMatch = true;
+            // Kasus khusus PUBG
+            if (targetBrand === 'PUBG' && itemName.includes('PUBG')) isMatch = true;
+
             if (!isMatch) return false;
 
             if (category === 'pulsa') {
@@ -90,7 +93,7 @@ app.post('/api/get-products', async (req, res) => {
         const products = filtered.map(p => ({
             sku: p.buyer_sku_code,
             name: p.product_name,
-            price: p.price + 200 // Profit markup Rp 200
+            price: p.price + 200 
         }));
 
         return res.status(200).json(products);
@@ -148,13 +151,12 @@ app.post('/api/create-transaction', async (req, res) => {
     }
 });
 
-// 3. Endpoint Cek Status Transaksi (Tarik Otomatis)
+// 3. Endpoint Cek Status
 app.get('/api/check-status/:query?', (req, res) => {
     const query = (req.params.query || '').trim().toLowerCase();
     const db = readDB();
     
     let matched = db;
-    // Jika ada kata kunci pencarian dan bukan "all", filter datanya
     if (query && query !== 'all') {
         matched = db.filter(trx => 
             trx.order_id.toLowerCase().includes(query) || 
@@ -171,8 +173,9 @@ app.get('/api/check-status/:query?', (req, res) => {
     }
 });
 
-// 4. Endpoint Webhook Midtrans & Eksekusi Digiflazz
+// 4. Endpoint Webhook Midtrans & Eksekusi Digiflazz (Diberikan Log untuk Debugging)
 app.post('/api/webhook', async (req, res) => {
+    console.log("WEBHOOK HIT RECEIVED:", JSON.stringify(req.body));
     try {
         const notification = req.body;
         if (!notification || !notification.transaction_status) return res.status(200).send("OK");
@@ -181,7 +184,11 @@ app.post('/api/webhook', async (req, res) => {
 
         let db = readDB();
         let trxIndex = db.findIndex(t => t.order_id === orderId);
-        if (trxIndex === -1) return res.status(200).send("Order not found");
+        
+        if (trxIndex === -1) {
+            console.log("Webhook Error: Order ID tidak ditemukan di database lokal:", orderId);
+            return res.status(200).send("Order not found in local db");
+        }
 
         if (transactionStatus === 'settlement' || (transactionStatus === 'capture' && fraudStatus === 'accept')) {
             db[trxIndex].status = 'PROCESSING';
@@ -204,6 +211,7 @@ app.post('/api/webhook', async (req, res) => {
             });
 
             const digiflazzResult = await digiflazzResponse.json();
+            console.log("DIGIFLAZZ EXECUTION RESULT:", digiflazzResult);
             
             if (digiflazzResult && digiflazzResult.data) {
                 db = readDB();
@@ -218,6 +226,7 @@ app.post('/api/webhook', async (req, res) => {
         }
         return res.status(200).json({ message: "Status handled." });
     } catch (error) {
+        console.error("WEBHOOK EXCEPTION ERROR:", error);
         return res.status(200).json({ message: 'Error: ' + error.message });
     }
 });
