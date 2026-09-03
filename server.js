@@ -27,7 +27,12 @@ const saveDB = (data) => {
     fs.writeFileSync(dbFile, JSON.stringify(limitedData, null, 2));
 };
 
-// 1. Endpoint Ambil Produk (Pencarian Cerdas Anti Nyasar & 100% Real-Time)
+// Fitur Cache (Agar tidak diblokir Digiflazz)
+let cachedProducts = null;
+let cacheTimestamp = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 Menit
+
+// 1. Endpoint Ambil Produk (Pencocokan Super Toleran)
 app.post('/api/get-products', async (req, res) => {
     const { brand, category } = req.body; 
     const username = process.env.DIGIFLAZZ_USERNAME;
@@ -36,48 +41,62 @@ app.post('/api/get-products', async (req, res) => {
     if (!username || !apiKey) return res.status(500).json({ message: 'API Key Digiflazz belum diatur' });
 
     try {
-        // HAPUS SISTEM CACHE - Langsung tembak ke Digiflazz detik ini juga
-        const sign = crypto.createHash('md5').update(username + apiKey + 'pricelist').digest('hex');
-        const digiflazzResponse = await fetch('https://api.digiflazz.com/v1/price-list', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ cmd: 'prepaid', username, sign })
-        });
-
-        const rawData = await digiflazzResponse.json();
+        const now = Date.now();
         let data = null;
 
-        if (rawData.data && Array.isArray(rawData.data)) {
-            data = rawData.data;
+        if (cachedProducts && (now - cacheTimestamp < CACHE_DURATION)) {
+            data = cachedProducts;
         } else {
-            return res.status(400).json({ message: 'Gagal ambil data dari pusat' });
+            const sign = crypto.createHash('md5').update(username + apiKey + 'pricelist').digest('hex');
+            const digiflazzResponse = await fetch('https://api.digiflazz.com/v1/price-list', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cmd: 'prepaid', username, sign })
+            });
+
+            const rawData = await digiflazzResponse.json();
+            if (rawData.data && Array.isArray(rawData.data)) {
+                data = rawData.data;
+                cachedProducts = data; 
+                cacheTimestamp = now;  
+            } else {
+                return res.status(400).json({ message: 'Gagal ambil data dari pusat' });
+            }
         }
 
-        // Hapus SEMUA spasi dan simbol, jadikan huruf besar semua untuk dicocokkan
+        // Hilangkan spasi/simbol untuk pencocokan (GOPAY, MOBILELEGENDS, dll)
         let targetBrand = (brand || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+        let targetCat = (category || "").toLowerCase();
 
         let filtered = data.filter(item => {
-            // Abaikan produk yang sedang gangguan/ditutup di Digiflazz
-            if (!item.buyer_product_status || item.buyer_product_status === false || item.buyer_product_status === '0') return false;
+            // Abaikan produk yang sedang ditutup/gangguan oleh Digiflazz
+            if (item.buyer_product_status === false || item.seller_product_status === false) return false;
 
             let itemBrand = (item.brand || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
             let itemName = (item.product_name || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+            let itemCat = (item.category || "").toLowerCase().replace(/[^a-z]/g, ''); 
+
+            // FILTER KATEGORI (Membaca langsung dari kategori asli Digiflazz)
+            if (targetCat === 'pulsa' && itemCat !== 'pulsa') return false;
+            if (targetCat === 'games' && itemCat !== 'games') return false;
+            if (targetCat === 'pln' && itemCat !== 'pln') return false;
+            if (targetCat === 'emoney' && itemCat !== 'emoney' && itemCat !== 'ewallet') return false; 
+
+            // FILTER BRAND (Pencocokan dua arah yang toleran)
+            let isMatch = false;
             
-            // Cek kecocokan (sekarang GO-PAY dan GOPAY akan dianggap sama, begitupun PUBG)
-            let isMatch = itemBrand.includes(targetBrand) || itemName.includes(targetBrand);
-            if (!isMatch) return false;
+            // Jika merek Digiflazz ada di pencarian kita, ATAU sebaliknya
+            if (itemBrand.includes(targetBrand) || (targetBrand.includes(itemBrand) && itemBrand.length > 3)) isMatch = true;
+            if (itemName.includes(targetBrand)) isMatch = true;
 
-            // Filter agar produk data/voucher tidak nyasar ke pulsa reguler
-            if (category === 'pulsa') {
-                if (itemName.includes('DATA') || itemName.includes('VOUCHER') || itemName.includes('WIFI') || itemName.includes('MASAAKTIF')) return false;
-            } else if (category === 'pln') {
-                if (!itemName.includes('TOKEN') && !itemName.includes('PLN')) return false;
-            }
+            // Handle Typo Digiflazz & Penamaan Nyeleneh
+            if (targetBrand === 'MOBILELEGENDS' && (itemBrand.includes('MLBB') || itemName.includes('MOBILELEGEND'))) isMatch = true;
+            if (targetBrand === 'PUBG' && (itemBrand.includes('PUBG') || itemName.includes('PUBG'))) isMatch = true;
+            if (targetBrand === 'GOPAY' && (itemBrand.includes('GOPAY') || (itemBrand.includes('GO') && itemBrand.includes('PAY')))) isMatch = true;
 
-            return true;
+            return isMatch;
         });
 
-        // Urutkan dari harga termurah
         filtered.sort((a, b) => a.price - b.price);
         const products = filtered.map(p => ({
             sku: p.buyer_sku_code,
@@ -175,7 +194,7 @@ app.post('/api/webhook', async (req, res) => {
         let trxIndex = db.findIndex(t => t.order_id === orderId);
         
         if (trxIndex === -1) {
-            console.log("Pesanan tidak ditemukan di database lokal. Mungkin server habis restart.");
+            console.log("Pesanan tidak ditemukan di database lokal.");
             return res.status(200).send("Order not found");
         }
 
@@ -200,7 +219,6 @@ app.post('/api/webhook', async (req, res) => {
             });
 
             const digiflazzResult = await digiflazzResponse.json();
-            console.log("HASIL DIGIFLAZZ:", digiflazzResult);
             
             if (digiflazzResult && digiflazzResult.data) {
                 db = readDB();
