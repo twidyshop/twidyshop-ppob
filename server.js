@@ -53,9 +53,7 @@ app.post('/api/get-products', async (req, res) => {
         let filtered = data.filter(item => {
             let itemBrand = (item.brand || "").trim().toUpperCase();
             let itemName = (item.product_name || "").toUpperCase();
-            let itemCategory = (item.category || "").trim().toUpperCase();
             
-            // Logika pencocokan brand yang lebih longgar
             let isMatch = false;
             if (targetBrand === 'TELKOMSEL') {
                 isMatch = itemBrand.includes('TELKOMSEL') || itemBrand.includes('TSEL') || itemName.includes('TELKOMSEL') || itemName.includes('TSEL');
@@ -69,14 +67,12 @@ app.post('/api/get-products', async (req, res) => {
 
             if (!isMatch) return false;
 
-            // Filter kategori pulsa
             if (category === 'pulsa') {
                 if (itemName.includes('VOUCHER') || itemName.includes('WIFI')) {
                     return false;
                 }
             }
 
-            // Status produk aktif (bisa boolean true/1/'1')
             if (item.buyer_product_status === false || item.buyer_product_status === 0 || item.buyer_product_status === '0') {
                 return false; 
             }
@@ -157,6 +153,55 @@ app.post('/api/create-transaction', async (req, res) => {
 
     } catch (error) {
         return res.status(500).json({ message: 'Server error: ' + error.message });
+    }
+});
+
+// 3. Endpoint Webhook Midtrans (Otomatis Eksekusi ke Digiflazz)
+app.post('/api/webhook', async (req, res) => {
+    try {
+        const notification = req.body;
+        const transactionStatus = notification.transaction_status;
+        const fraudStatus = notification.fraud_status;
+
+        if (transactionStatus === 'settlement' || (transactionStatus === 'capture' && fraudStatus === 'accept')) {
+            const orderId = notification.order_id;
+            const targetId = notification.customer_last_name; 
+            const buyerSkuCode = notification.item_details && notification.item_details[0] ? notification.item_details[0].id : '';
+
+            const username = process.env.DIGIFLAZZ_USERNAME;
+            const apiKey = process.env.DIGIFLAZZ_API_KEY;
+
+            if (!username || !apiKey || !buyerSkuCode || !targetId) {
+                return res.status(500).json({ message: 'Data webhook / kredensial tidak lengkap' });
+            }
+
+            const refId = orderId;
+            const sign = crypto.createHash('md5').update(username + apiKey + refId).digest('hex');
+
+            const digiflazzResponse = await fetch('https://api.digiflazz.com/v1/transaction', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: username,
+                    buyer_sku_code: buyerSkuCode,
+                    customer_no: targetId,
+                    ref_id: refId,
+                    sign: sign
+                })
+            });
+
+            const digiflazzResult = await digiflazzResponse.json();
+
+            return res.status(200).json({
+                status: "Success processed to Digiflazz",
+                digiflazz_response: digiflazzResult
+            });
+        }
+
+        return res.status(200).json({ message: "Notification received but not settlement yet." });
+
+    } catch (error) {
+        return res.status(500).json({ message: 'Webhook error: ' + error.message });
     }
 });
 
