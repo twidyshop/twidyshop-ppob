@@ -24,7 +24,6 @@
                 <button id="btnBack" class="hidden text-white hover:text-blue-200 transition" onclick="switchView('catalog')">
                     <i class="fas fa-arrow-left text-lg"></i>
                 </button>
-                <!-- Logo berfungsi sebagai Beranda -->
                 <div onclick="switchView('catalog')" class="cursor-pointer flex items-center gap-2">
                     <h1 class="text-xl font-extrabold tracking-wide">TWIDY<span class="text-yellow-300">SHOP</span></h1>
                 </div>
@@ -218,12 +217,10 @@
         }
 
         function switchView(view) {
-            // Sembunyikan semua view utama
             document.getElementById('viewCatalog').classList.add('hidden');
             document.getElementById('viewCheckout').classList.add('hidden');
             document.getElementById('viewStatus').classList.add('hidden');
             
-            // Reset active style bottom nav
             document.getElementById('nav-catalog').className = "flex flex-col items-center hover:text-blue-600 transition text-slate-400";
             document.getElementById('nav-status').className = "flex flex-col items-center hover:text-blue-600 transition text-slate-400";
 
@@ -305,7 +302,6 @@
                 return;
             }
             container.innerHTML = `<div class="bg-white p-4 rounded-xl border border-slate-200 text-center text-xs text-slate-500">Mencari data transaksi...</div>`;
-            // Contoh simulasi pencarian status (bisa disesuaikan dengan endpoint status kamu jika ada)
             setTimeout(() => {
                 container.innerHTML = `<div class="bg-white p-4 rounded-xl border border-slate-200 text-center text-xs text-slate-600">Belum ada riwayat transaksi untuk "${query}" di sesi browser ini. Silakan hubungi Bantuan WhatsApp jika ada kendala.</div>`;
             }, 500);
