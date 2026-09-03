@@ -156,19 +156,10 @@ app.post('/api/create-transaction', async (req, res) => {
     }
 });
 
-// 3. Endpoint Webhook Midtrans (GET & POST Handler untuk Lolos Test URL)
-app.get('/api/webhook', (req, res) => {
-    return res.status(200).json({ status: "OK", message: "Webhook GET test successful." });
-});
-
+// 3. Endpoint Webhook Midtrans (Otomatis Eksekusi ke Digiflazz)
 app.post('/api/webhook', async (req, res) => {
     try {
         const notification = req.body;
-        
-        if (!notification || !notification.transaction_status) {
-            return res.status(200).json({ status: "OK", message: "Webhook active." });
-        }
-
         const transactionStatus = notification.transaction_status;
         const fraudStatus = notification.fraud_status;
 
