@@ -13,6 +13,9 @@ let cachedProducts = null;
 let cacheTimestamp = 0;
 const CACHE_DURATION = 5 * 60 * 1000; 
 
+// Database memori sementara untuk menyimpan riwayat transaksi (Aman untuk cek status global)
+const transactionDB = {};
+
 // 1. Endpoint Ambil Produk Digiflazz
 app.post('/api/get-products', async (req, res) => {
     const { brand, category } = req.body; 
@@ -98,15 +101,26 @@ app.post('/api/get-products', async (req, res) => {
 // 2. Endpoint Buat Transaksi Midtrans Snap Token
 app.post('/api/create-transaction', async (req, res) => {
     try {
-        const { targetId, productCode, price } = req.body;
+        const { targetId, productCode, price, productName } = req.body;
 
         if (!targetId || !productCode || !price) {
             return res.status(400).json({ message: 'Target ID, Produk, dan Harga wajib diisi!' });
         }
 
-        // TRIK AMPUH: Sisipkan productCode ke dalam Order ID pakai pemisah garis bawah (_)
         const orderId = `TW_${productCode}_${Date.now()}`;
         const amount = parseInt(price);
+
+        // Simpan data awal transaksi ke database memori lokal
+        transactionDB[orderId] = {
+            order_id: orderId,
+            target_id: targetId,
+            product_code: productCode,
+            product_name: productName || productCode,
+            amount: amount,
+            status: 'PENDING',
+            created_at: new Date().toISOString(),
+            sn: '-'
+        };
 
         const midtransServerKey = process.env.MIDTRANS_SERVER_KEY;
         if (!midtransServerKey) {
@@ -135,7 +149,7 @@ app.post('/api/create-transaction', async (req, res) => {
                     id: productCode,
                     price: amount,
                     quantity: 1,
-                    name: `Top Up ${productCode}`
+                    name: productName || `Top Up ${productCode}`
                 }]
             })
         });
@@ -157,7 +171,25 @@ app.post('/api/create-transaction', async (req, res) => {
     }
 });
 
-// 3. Endpoint Webhook Midtrans (Ekstrak Produk dari Order ID)
+// 3. Endpoint Cek Status Transaksi Global (Dipakai menu Cek Status Frontend)
+app.get('/api/check-status/:query', (req, res) => {
+    const query = req.params.query.trim().toLowerCase();
+    
+    let matched = Object.values(transactionDB).filter(trx => {
+        return trx.order_id.toLowerCase().includes(query) || trx.target_id.toLowerCase().includes(query);
+    });
+
+    // Urutkan dari yang paling baru
+    matched.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    if (matched.length > 0) {
+        return res.status(200).json({ success: true, data: matched });
+    } else {
+        return res.status(404).json({ success: false, message: 'Tidak ditemukan riwayat transaksi untuk pencarian tersebut.' });
+    }
+});
+
+// 4. Endpoint Webhook Midtrans & Eksekusi Digiflazz
 app.get('/api/webhook', (req, res) => {
     return res.status(200).json({ status: "OK", message: "Webhook endpoint is active." });
 });
@@ -172,11 +204,13 @@ app.post('/api/webhook', async (req, res) => {
 
         const transactionStatus = notification.transaction_status;
         const fraudStatus = notification.fraud_status;
+        const orderId = notification.order_id;
 
         if (transactionStatus === 'settlement' || (transactionStatus === 'capture' && fraudStatus === 'accept')) {
-            const orderId = notification.order_id;
-            
-            // Ambil nomor HP tujuan
+            if (transactionDB[orderId]) {
+                transactionDB[orderId].status = 'SUCCESS (PROCESSING)';
+            }
+
             let targetId = '';
             if (notification.customer_details) {
                 const fullName = notification.customer_details.full_name || '';
@@ -185,11 +219,9 @@ app.post('/api/webhook', async (req, res) => {
                 if (!targetId) targetId = notification.customer_details.last_name || '';
             }
 
-            // EKSTRAK PASTI: Ambil SKU produk dari dalam order_id (TW_SKU_TIMESTAMP)
             let buyerSkuCode = '';
             if (orderId && orderId.includes('_')) {
                 const orderParts = orderId.split('_');
-                // orderParts[0] = 'TW', orderParts[1] = KODE PRODUK, orderParts[2] = TIMESTAMP
                 if (orderParts.length >= 3) {
                     buyerSkuCode = orderParts[1];
                 }
@@ -197,8 +229,6 @@ app.post('/api/webhook', async (req, res) => {
 
             const username = process.env.DIGIFLAZZ_USERNAME;
             const apiKey = process.env.DIGIFLAZZ_API_KEY;
-
-            console.log("MENGEKSEKUSI KE DIGIFLAZZ:", { username, buyerSkuCode, targetId, orderId });
 
             if (!username || !apiKey || !buyerSkuCode || !targetId) {
                 console.error("Webhook Gagal: Data tidak lengkap", { buyerSkuCode, targetId });
@@ -223,13 +253,27 @@ app.post('/api/webhook', async (req, res) => {
             const digiflazzResult = await digiflazzResponse.json();
             console.log("HASIL DIGIFLAZZ:", digiflazzResult);
 
+            if (digiflazzResult && digiflazzResult.data) {
+                const statusPusat = digiflazzResult.data.status;
+                const serialNumber = digiflazzResult.data.sn || '-';
+                
+                if (transactionDB[orderId]) {
+                    transactionDB[orderId].status = statusPusat;
+                    transactionDB[orderId].sn = serialNumber;
+                }
+            }
+
             return res.status(200).json({
                 status: "Processed to Digiflazz",
                 digiflazz_response: digiflazzResult
             });
+        } else if (transactionStatus === 'cancel' || transactionStatus === 'expire' || transactionStatus === 'deny') {
+            if (transactionDB[orderId]) {
+                transactionDB[orderId].status = 'FAILED / EXPIRED';
+            }
         }
 
-        return res.status(200).json({ message: "Not settlement yet." });
+        return res.status(200).json({ message: "Status handled." });
 
     } catch (error) {
         console.error("WEBHOOK EXCEPTION:", error);
