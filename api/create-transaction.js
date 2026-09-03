@@ -8,8 +8,7 @@ export default async function handler(req, res) {
     );
 
     if (req.method === 'OPTIONS') {
-        res.status(200).end();
-        return;
+        return res.status(200).end();
     }
 
     if (req.method !== 'POST') {
@@ -23,12 +22,8 @@ export default async function handler(req, res) {
             return res.status(400).json({ message: 'Target ID, Produk, dan Harga wajib diisi!' });
         }
 
-        // Format Order ID diselipkan productCode dan targetId agar aman dibaca webhook
-        // Contoh: TWIDY-SKU_PRODUK-NOMOR_TUJUAN-TIMESTAMP
-        const cleanSku = productCode.replace(/[^a-zA-Z0-9-_]/g, '_');
-        const cleanTarget = targetId.replace(/[^a-zA-Z0-9]/g, '');
-        const orderId = `TWIDY-${cleanSku}-${cleanTarget}-${Date.now()}`;
-        const amount = parseInt(price);
+        const orderId = 'TWIDY-' + Date.now();
+        const amount = parseInt(price); 
 
         const midtransServerKey = process.env.MIDTRANS_SERVER_KEY;
         if (!midtransServerKey) {
@@ -37,7 +32,7 @@ export default async function handler(req, res) {
 
         const authString = Buffer.from(midtransServerKey + ':').toString('base64');
 
-        const midtransResponse = await fetch('https://app.midtrans.com/snap/v1/transactions', {
+        const midtransResponse = await fetch('https://midtrans.com', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -51,7 +46,7 @@ export default async function handler(req, res) {
                 },
                 customer_details: {
                     first_name: "Customer",
-                    phone: targetId
+                    last_name: targetId 
                 },
                 item_details: [{
                     id: productCode,
