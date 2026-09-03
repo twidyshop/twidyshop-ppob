@@ -6,7 +6,6 @@
     <title>TWIDY SHOP - Pusat Top Up & PPOB Terlengkap</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <!-- Library untuk Export Gambar Struk -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://app.midtrans.com/snap/snap.js" data-client-key="CLIENT_KEY_KAMU"></script>
     <style>
@@ -18,7 +17,6 @@
         .tab-content.active { display: grid; }
     </style>
 </head>
-<!-- Padding Bottom (pb) diperbesar agar konten tidak tertutup bar bawah di Tablet/PC -->
 <body class="bg-slate-50 text-slate-800 font-sans pb-28 md:pb-32 selection:bg-blue-600 selection:text-white" onload="filterCategory('pulsa')">
 
     <header class="bg-blue-600 text-white sticky top-0 z-50 shadow-md">
@@ -37,9 +35,8 @@
 
     <main class="max-w-5xl mx-auto px-4 mt-6">
         
-        <!-- KATALOG UTAMA (Responsif Lebar) -->
+        <!-- KATALOG UTAMA -->
         <div id="viewCatalog" class="fade-in block">
-            
             <div class="bg-gradient-to-r from-blue-600 to-indigo-800 rounded-2xl p-6 text-white shadow-xl mb-8 relative overflow-hidden md:p-8">
                 <div class="relative z-10">
                     <span class="bg-emerald-500 text-white text-[10px] md:text-xs font-bold px-2 py-1 rounded-full uppercase tracking-wider">Resmi & Legal</span>
@@ -49,7 +46,6 @@
                 <i class="fas fa-rocket absolute -right-4 -bottom-4 text-8xl md:text-9xl text-white/10 transform -rotate-12"></i>
             </div>
 
-            <!-- Kategori Menu (Responsif Grid) -->
             <div class="grid grid-cols-4 md:grid-cols-4 gap-3 md:gap-6 mb-8 text-center">
                 <div onclick="filterCategory('pulsa')" id="menu-pulsa" class="menu-cat bg-white p-3 md:p-5 rounded-xl md:rounded-2xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition hover:-translate-y-1">
                     <div class="w-10 h-10 md:w-14 md:h-14 mx-auto rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2 md:text-xl"><i class="fas fa-mobile-screen-button"></i></div>
@@ -106,7 +102,6 @@
                     <div class="aspect-square rounded-xl bg-orange-600 text-white font-black text-3xl flex items-center justify-center shadow-inner mb-3">FF</div>
                     <p class="text-xs md:text-sm font-bold text-slate-700 truncate">FREE FIRE</p>
                 </div>
-                <!-- TOMBOL PUBG DITAMBAHKAN DI SINI -->
                 <div onclick="openCheckout('PUBG', 'games', 'bg-zinc-800', 'PUBG')" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:border-blue-500 transition p-3 md:p-4 text-center">
                     <div class="aspect-square rounded-xl bg-zinc-800 text-white font-black text-2xl md:text-3xl flex items-center justify-center shadow-inner mb-3">PUBG</div>
                     <p class="text-xs md:text-sm font-bold text-slate-700 truncate">PUBG MOBILE</p>
@@ -114,7 +109,7 @@
             </div>
 
             <div id="grid-emoney" class="tab-content grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5 mb-6">
-                <div onclick="openCheckout('GO PAY', 'emoney', 'bg-blue-500', 'GP')" class="bg-white p-3 md:p-4 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                <div onclick="openCheckout('GOPAY', 'emoney', 'bg-blue-500', 'GP')" class="bg-white p-3 md:p-4 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
                     <div class="w-10 h-10 md:w-12 md:h-12 rounded-lg shrink-0 flex items-center justify-center bg-blue-500 text-white font-extrabold shadow-inner">GP</div>
                     <div class="overflow-hidden"><p class="text-xs md:text-sm font-bold text-slate-800">GO PAY</p></div>
                 </div>
@@ -126,7 +121,7 @@
                     <div class="w-10 h-10 md:w-12 md:h-12 rounded-lg shrink-0 flex items-center justify-center bg-blue-400 text-white font-extrabold shadow-inner">DA</div>
                     <div class="overflow-hidden"><p class="text-xs md:text-sm font-bold text-slate-800">DANA</p></div>
                 </div>
-                <div onclick="openCheckout('SHOPEE PAY', 'emoney', 'bg-orange-500', 'SP')" class="bg-white p-3 md:p-4 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                <div onclick="openCheckout('SHOPEEPAY', 'emoney', 'bg-orange-500', 'SP')" class="bg-white p-3 md:p-4 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
                     <div class="w-10 h-10 md:w-12 md:h-12 rounded-lg shrink-0 flex items-center justify-center bg-orange-500 text-white font-extrabold shadow-inner">SP</div>
                     <div class="overflow-hidden"><p class="text-xs md:text-sm font-bold text-slate-800">SHOPEE PAY</p></div>
                 </div>
@@ -146,7 +141,7 @@
                 <div id="checkoutLogoContainer" class="w-12 h-12 rounded-lg bg-blue-600 flex items-center justify-center shrink-0"></div>
                 <div>
                     <h2 id="checkoutTitle" class="font-bold text-slate-800 text-base">Nama Produk</h2>
-                    <p class="text-xs text-emerald-600 font-medium"><i class="fas fa-check-circle"></i> Proses Otomatis via API</p>
+                    <p class="text-xs text-emerald-600 font-medium"><i class="fas fa-check-circle"></i> Proses Otomatis 24 Jam</p>
                 </div>
             </div>
 
@@ -167,26 +162,26 @@
             </form>
         </div>
 
-        <!-- VIEW RIWAYAT TRANSAKSI -->
+        <!-- VIEW RIWAYAT -->
         <div id="viewStatus" class="hidden fade-in max-w-3xl mx-auto">
             <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-6 text-center">
                 <div class="w-14 h-14 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl">
                     <i class="fas fa-history"></i>
                 </div>
                 <h2 class="font-bold text-slate-800 text-lg mb-2">Riwayat Transaksi</h2>
-                <p class="text-xs md:text-sm text-slate-500 mb-5">Masukkan Nomor HP atau Order ID untuk mencari riwayat spesifik.</p>
+                <p class="text-xs md:text-sm text-slate-500 mb-5">Daftar transaksi terakhir Anda.</p>
                 
                 <div class="flex gap-2 max-w-md mx-auto">
-                    <input type="text" id="searchOrderId" placeholder="Ketik nomor HP / ID pesanan..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-800 outline-none focus:border-blue-600 transition">
+                    <input type="text" id="searchOrderId" placeholder="Cari No HP / Order ID..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-800 outline-none focus:border-blue-600 transition">
                     <button onclick="checkOrderStatus()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 rounded-xl text-sm font-bold shrink-0 transition shadow-md">Cari</button>
                 </div>
             </div>
             <div id="statusResultContainer" class="space-y-4"></div>
         </div>
 
-        <!-- VIEW NOTA / STRUK -->
+        <!-- VIEW INVOICE -->
         <div id="viewInvoice" class="hidden fade-in max-w-lg mx-auto">
-            <div id="invoice-card" class="bg-white p-6 md:p-8 rounded-2xl border border-slate-200 shadow-md mb-6 relative bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIi8+CjxwYXRoIGQ9Ik0xIDFMMiAyTTMgM0w0IDQiIHN0cm9rZT0iI2YxZjVmOSIgc3Ryb2tlLXdpZHRoPSIxIi8+Cjwvc3ZnPg==')]">
+            <div id="invoice-card" class="bg-white p-6 md:p-8 rounded-2xl border border-slate-200 shadow-md mb-6 relative">
                 <div class="text-center pb-5 border-b border-dashed border-slate-300">
                     <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-3 text-3xl shadow-sm">
                         <i class="fas fa-check-circle"></i>
@@ -239,7 +234,7 @@
                     <i class="fas fa-exclamation-triangle"></i>
                 </div>
                 <h3 class="text-lg font-bold text-slate-800 mb-2">Konfirmasi Data</h3>
-                <p class="text-sm text-slate-600 mb-4">Pastikan data berikut sudah benar. Kesalahan input tujuan <b class="text-red-500">tidak dapat di-refund</b>.</p>
+                <p class="text-sm text-slate-600 mb-4">Pastikan data tujuan sudah benar. Kesalahan input <b class="text-red-500">tidak dapat di-refund</b>.</p>
                 
                 <div class="bg-slate-50 rounded-lg p-3 border border-slate-200 mb-5 text-sm space-y-2">
                     <div class="flex justify-between"><span class="text-slate-500">Tujuan:</span><span id="confirmTarget" class="font-bold text-blue-600"></span></div>
@@ -249,14 +244,12 @@
 
                 <div class="flex gap-3">
                     <button onclick="closeModal()" class="w-1/2 py-2.5 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition text-sm">Batal</button>
-                    <button onclick="processPayment()" id="btnConfirmPay" class="w-1/2 py-2.5 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 transition shadow-lg text-sm">Ya, Bayar</button>
+                    <button onclick="processPayment()" id="btnConfirmPay" class="w-1/2 py-2.5 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 transition shadow-lg text-sm">Ya, Lanjutkan</button>
                 </div>
             </div>
         </div>
-
     </main>
 
-    <!-- Bottom Nav (Sekarang selalu muncul tanpa memandang ukuran layar) -->
     <div class="fixed bottom-0 w-full bg-white border-t border-slate-200 z-40">
         <div class="max-w-md mx-auto flex justify-around p-3 text-slate-400">
             <button onclick="switchView('catalog')" id="nav-catalog" class="flex flex-col items-center text-blue-600 transition">
@@ -304,7 +297,7 @@
                 document.getElementById('viewStatus').classList.remove('hidden');
                 document.getElementById('btnBack').classList.remove('hidden');
                 document.getElementById('nav-status').className = "flex flex-col items-center text-blue-600 transition";
-                checkOrderStatus('all'); // PANGGIL OTOMATIS SAAT MENU DIKLIK
+                checkOrderStatus('all'); 
             } else if(view === 'invoice') {
                 document.getElementById('viewInvoice').classList.remove('hidden');
                 document.getElementById('btnBack').classList.remove('hidden');
@@ -341,7 +334,7 @@
             const container = document.getElementById('nominalOptions');
             document.getElementById('btnPrePay').disabled = true;
 
-            container.innerHTML = `<div class="col-span-2 md:col-span-3 text-center text-sm text-slate-500 py-10"><i class="fas fa-spinner fa-spin mr-2 text-xl"></i> Mengambil data dari pusat...</div>`;
+            container.innerHTML = `<div class="col-span-2 md:col-span-3 text-center text-sm text-slate-500 py-10"><i class="fas fa-spinner fa-spin mr-2 text-xl"></i> Sedang memuat produk...</div>`;
             window.scrollTo(0,0);
 
             try {
@@ -362,7 +355,7 @@
                     `).join('');
                     document.getElementById('btnPrePay').disabled = false;
                 } else {
-                    container.innerHTML = `<div class="col-span-2 md:col-span-3 text-center text-sm text-red-500 font-bold py-10">Produk sedang kosong / gangguan pusat.</div>`;
+                    container.innerHTML = `<div class="col-span-2 md:col-span-3 text-center text-sm text-red-500 font-bold py-10">Produk sedang kosong / gangguan.</div>`;
                 }
             } catch (e) {
                 container.innerHTML = `<div class="col-span-2 md:col-span-3 text-center text-sm text-red-500 py-10">Gagal terhubung ke server.</div>`;
@@ -373,12 +366,11 @@
             if(!status) return '';
             status = status.toUpperCase();
             if(status.includes('SUKSES') || status.includes('SUCCESS')) return `<span class="px-2 py-1 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">SUKSES</span>`;
-            if(status.includes('GAGAL') || status.includes('FAILED') || status.includes('CANCEL') || status.includes('DENY') || status.includes('EXPIRE')) return `<span class="px-2 py-1 rounded-md text-[10px] font-bold bg-red-100 text-red-700 border border-red-200">GAGAL / REFUND</span>`;
-            return `<span class="px-2 py-1 rounded-md text-[10px] font-bold bg-amber-100 text-amber-700 border border-amber-200"><i class="fas fa-sync fa-spin mr-1"></i> PROSES</span>`;
+            if(status.includes('GAGAL') || status.includes('FAILED') || status.includes('CANCEL') || status.includes('DENY') || status.includes('EXPIRE')) return `<span class="px-2 py-1 rounded-md text-[10px] font-bold bg-red-100 text-red-700 border border-red-200">GAGAL / EXPIRED</span>`;
+            return `<span class="px-2 py-1 rounded-md text-[10px] font-bold bg-amber-100 text-amber-700 border border-amber-200"><i class="fas fa-sync fa-spin mr-1"></i> DIPROSES</span>`;
         }
 
         async function checkOrderStatus(fetchType = null) {
-            // Jika dipanggil dari tombol 'Cari', ambil isi input. Jika otomatis (fetchType='all'), query='all'.
             const query = fetchType === 'all' ? 'all' : document.getElementById('searchOrderId').value.trim();
             const container = document.getElementById('statusResultContainer');
             
@@ -408,7 +400,7 @@
                         </div>
                     `).join('');
                 } else {
-                    container.innerHTML = `<div class="text-center text-sm text-slate-600 bg-slate-50 p-6 rounded-xl border border-slate-200">Belum ada riwayat transaksi / tidak ditemukan.</div>`;
+                    container.innerHTML = `<div class="text-center text-sm text-slate-600 bg-slate-50 p-6 rounded-xl border border-slate-200">Belum ada riwayat transaksi.</div>`;
                 }
             } catch (err) {
                 container.innerHTML = `<div class="text-center text-sm text-red-500 bg-red-50 p-6 rounded-xl border border-red-100">Gagal terhubung ke server.</div>`;
@@ -440,7 +432,7 @@
 
         async function processPayment() {
             const btnConfirm = document.getElementById('btnConfirmPay');
-            btnConfirm.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Proses...';
+            btnConfirm.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Memproses...';
             btnConfirm.disabled = true;
 
             const targetId = document.getElementById('targetId').value;
@@ -469,7 +461,7 @@
             } catch (error) {
                 alert("Gagal koneksi ke server.");
             } finally {
-                btnConfirm.innerHTML = 'Ya, Bayar';
+                btnConfirm.innerHTML = 'Ya, Lanjutkan';
                 btnConfirm.disabled = false;
             }
         }
