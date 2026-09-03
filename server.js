@@ -9,7 +9,6 @@ app.use(cors());
 
 // Agar file index.html dan aset frontend terbaca di Render
 app.use(express.static(path.join(__dirname, 'public')));
-// Kalau file index.html lu taruh di luar folder public (di root utama), ganti baris atas jadi: app.use(express.static(__dirname));
 
 let cachedProducts = null;
 let cacheTimestamp = 0;
@@ -59,12 +58,15 @@ app.post('/api/get-products', async (req, res) => {
             let isBrandMatch = itemBrand.includes(targetBrand) || itemName.includes(targetBrand);
             if (!isBrandMatch) return false;
 
+            // Filter ketat agar kategori pulsa tidak nyampur dengan paket data / telepon
             if (category === 'pulsa') {
                 if (itemName.includes('DATA') || 
                     itemName.includes('INTERNET') || 
                     itemName.includes('VOUCHER') || 
                     itemName.includes('WIFI') || 
-                    itemName.includes('PAKET')) {
+                    itemName.includes('PAKET') || 
+                    itemName.includes('TELPON') || 
+                    itemName.includes('TELEPON')) {
                     return false;
                 }
             }
