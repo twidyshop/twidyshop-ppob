@@ -14,13 +14,15 @@
         .fade-in { animation: fadeIn 0.25s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* Memastikan teks nama produk turun ke bawah secara penuh dan tidak terpotong */
+        /* Memastikan teks nama produk mutlak tidak terpotong */
         .product-title {
-            display: block;
-            white-space: normal;
-            word-break: break-word;
-            overflow: visible;
-            line-height: 1.3rem;
+            display: block !important;
+            white-space: normal !important;
+            word-break: break-word !important;
+            overflow: visible !important;
+            height: auto !important;
+            max-height: none !important;
+            line-height: 1.3rem !important;
         }
 
         .modal-overlay { background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px); }
@@ -104,7 +106,7 @@
 
                 <div class="md:col-span-7 lg:col-span-8 bg-white p-5 md:p-6 rounded-2xl border border-slate-200 shadow-sm mt-6 md:mt-0">
                     <label class="block text-sm md:text-base font-bold text-slate-800 mb-4">Pilih Nominal Produk</label>
-                    <!-- Menggunakan grid 1 kolom untuk memastikan kotak produk melebar leluasa ke bawah dan teks tidak terpotong -->
+                    <!-- Grid 1 kolom melebar ke bawah agar nama produk sepanjang apapun tidak kepotong -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="nominalOptions"></div>
                 </div>
 
@@ -193,7 +195,7 @@
             if(activeMenu) activeMenu.classList.add('bg-blue-50', 'border-blue-500');
 
             const container = document.getElementById('dynamicBrandContainer');
-            container.innerHTML = `<div class="col-span-full text-center text-sm text-slate-400 py-10"><i class="fas fa-spinner fa-spin mr-2"></i> Memuat layanan ${categoryName.toUpperCase()}...</div>`;
+            container.innerHTML = `<div class="col-span-full text-center text-sm text-slate-400 py-10"><i class="fas fa-spinner fa-spin mr-2"></i> Memuat layanan...</div>`;
 
             try {
                 const res = await fetch(`/api/get-brands/${categoryName}`);
@@ -211,7 +213,7 @@
                         `;
                     }).join('');
                 } else {
-                    container.innerHTML = `<div class="col-span-full text-center text-sm text-red-500 py-10 font-bold">Tidak ada produk aktif untuk kategori ini.</div>`;
+                    container.innerHTML = `<div class="col-span-full text-center text-sm text-red-500 py-10 font-bold">Belum ada produk aktif untuk kategori ini.</div>`;
                 }
             } catch (err) {
                 container.innerHTML = `<div class="col-span-full text-center text-sm text-red-500 py-10">Gagal memuat data.</div>`;
@@ -394,7 +396,7 @@
                                 <div class="bg-blue-50 border border-blue-100 p-4 rounded-xl mb-4 flex flex-col md:flex-row md:justify-between items-center justify-center">
                                     <span class="text-xs md:text-sm text-blue-600 font-bold mb-1 md:mb-0"><i class="fas fa-key mr-1"></i> SN / TOKEN</span>
                                     <span class="font-mono font-black text-slate-800 text-base md:text-lg text-center tracking-wider">${trx.sn !== '-' ? trx.sn : (isPending ? 'Menunggu Server...' : '-')}</span>
-                                </div>
+                                }
 
                                 <div class="flex gap-3">
                                     <button onclick="downloadHistoryCard('card-${trx.order_id}')" class="w-1/2 bg-slate-800 hover:bg-slate-900 text-white py-3 rounded-xl font-bold text-xs md:text-sm transition"><i class="fas fa-download mr-1"></i> Simpan</button>
