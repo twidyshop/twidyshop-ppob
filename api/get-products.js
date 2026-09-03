@@ -1,104 +1,99 @@
 const crypto = require('crypto');
 
-// Brankas memori sementara di server Vercel (Cache) 5 Menit
-let cachedProducts = null;
-let cacheTimestamp = 0;
-const CACHE_DURATION = 5 * 60 * 1000; 
-
 export default async function handler(req, res) {
-    if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
+    // Aktifkan CORS agar frontend bisa mengakses API tanpa kendala
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
 
-    const { brand, category } = req.body; 
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+
+    if (req.method !== 'POST') {
+        return res.status(405).json({ message: 'Method not allowed' });
+    }
+
+    const { brand } = req.body; 
     const username = process.env.DIGIFLAZZ_USERNAME;
     const apiKey = process.env.DIGIFLAZZ_API_KEY;
 
     if (!username || !apiKey) {
-        return res.status(500).json({ message: 'API Key Digiflazz belum diatur' });
+        return res.status(500).json({ message: 'API Key Digiflazz belum diatur di Environment Variables Vercel.' });
     }
 
+    // Pembuatan Signature Valid untuk Pricelist Prepaid Digiflazz
+    const sign = crypto.createHash('md5').update(username + apiKey + 'pricelist').digest('hex');
+
     try {
-        const now = Date.now();
-        let data = null;
-
-        // Cek Memori 5 Menit
-        if (cachedProducts && (now - cacheTimestamp < CACHE_DURATION)) {
-            data = cachedProducts;
-        } else {
-            // PERBAIKAN: Rumus sign pricelist untuk Digiflazz
-            const sign = crypto.createHash('md5').update(username + apiKey + 'pricelist').digest('hex');
-            
-            const digiflazzResponse = await fetch('https://api.digiflazz.com/v1/price-list', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ cmd: 'prepaid', username, sign })
-            });
-
-            const rawData = await digiflazzResponse.json();
-            
-            // Cek apakah data benar-benar ada dari Digiflazz
-            if (rawData.data && Array.isArray(rawData.data)) {
-                data = rawData.data;
-                cachedProducts = data; 
-                cacheTimestamp = now;  
-            } else {
-                return res.status(400).json({ 
-                    message: 'Gagal ambil data dari pusat Digiflazz', 
-                    detail: rawData.rc ? `${rawData.rc} - ${rawData.message}` : rawData 
-                });
-            }
-        }
-
-        let targetBrand = (brand || "").trim().toUpperCase();
-
-        // FILTER SUPER LONGGAR
-        let filtered = data.filter(item => {
-            let itemBrand = (item.brand || "").trim().toUpperCase();
-            let itemName = (item.product_name || "").toUpperCase();
-            let itemCategory = (item.category || "").toUpperCase();
-            
-            // 1. Pastikan nama brand atau nama produk cocok dengan yang diklik (misal: TELKOMSEL)
-            let isBrandMatch = itemBrand.includes(targetBrand) || itemName.includes(targetBrand);
-            if (!isBrandMatch) return false;
-
-            // 2. Filter khusus pulsa (Manfaatkan field 'category' bawaan Digiflazz jika ada)
-            if (category === 'pulsa') {
-                // Jika digiflazz mengategorikan sebagai Pulsa, prioritaskan cek field category
-                if (itemCategory && itemCategory !== 'PULSA') return false;
-
-                // Proteksi tambahan via teks nama produk
-                if (itemName.includes('DATA') || 
-                    itemName.includes('INTERNET') || 
-                    itemName.includes('VOUCHER') || 
-                    itemName.includes('WIFI') || 
-                    itemName.includes('PAKET')) {
-                    return false;
-                }
-            }
-
-            // 3. Cek status keaktifan produk
-            if (item.buyer_product_status === false || item.buyer_product_status === 0 || item.buyer_product_status === '0' || item.seller_product_status === false) {
-                return false; 
-            }
-
-            return true;
+        const digiflazzResponse = await fetch('https://digiflazz.com', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cmd: 'prepaid', username, sign })
         });
 
-        // Urutkan harga dari yang termurah ke termahal
-        filtered.sort((a, b) => a.price - b.price);
-
-        // Profit Rp 200 perak
-        const marginProfit = 200; 
+        const data = await digiflazzResponse.json();
         
-        const products = filtered.map(p => ({
-            sku: p.buyer_sku_code,
-            name: p.product_name,
-            price: p.price + marginProfit,
-            status: p.buyer_product_status && p.seller_product_status // Info tambahan ke frontend jika perlu
-        }));
-
-        // Kembalikan daftar produk ke web
-        return res.status(200).json(products);
+        // JIKA DIGIFLAZZ MENGEMBALIKAN ERROR (IP diblokir, salah key, dll)
+        if (data.rc && data.rc !== '00') {
+            return res.status(400).json({ 
+                message: `Digiflazz Error (${data.rc}): ${data.message}. Pastikan IP Vercel / Whitelist All IP di Digiflazz sudah diaktifkan.` 
+            });
+        }
         
+        if (data.data && Array.isArray(data.data)) {
+            let targetBrand = (brand || "").trim().toUpperCase();
+
+            // KONSISTENSI MAPPING BRAND (Solusi agar Telkomsel/Game/E-Money tidak kosong)
+            let alterBrand = targetBrand;
+            if (targetBrand === "TELKOMSEL") alterBrand = "TSEL";
+            if (targetBrand === "MOBILE LEGENDS") alterBrand = "DIAMOND MOBILE LEGENDS";
+            if (targetBrand === "FREE FIRE") alterBrand = "FREE FIRE";
+            if (targetBrand === "GO PAY") alterBrand = "GOPAY";
+            if (targetBrand === "SHOPEE PAY") alterBrand = "SHOPEEPAY";
+
+            // Proses Filter Super Longgar
+            let filtered = data.data.filter(item => {
+                let itemBrand = (item.brand || "").trim().toUpperCase();
+                let itemName = (item.product_name || "").trim().toUpperCase();
+                
+                // Pastikan produk berstatus aktif (bisa dibeli)
+                const isAvailable = item.buyer_product_status === true && item.seller_product_status === true;
+                if (!isAvailable) return false;
+
+                // COCOKKAN BRAND: Menggunakan nama asli dari frontend atau alias dari Digiflazz
+                const matchBrand = itemBrand.includes(targetBrand) || 
+                                    itemBrand.includes(alterBrand) || 
+                                    itemName.includes(targetBrand) || 
+                                    itemName.includes(alterBrand);
+                                    
+                return matchBrand;
+            });
+
+            // Urutkan dari harga termurah
+            filtered.sort((a, b) => a.price - b.price);
+
+            const marginProfit = 1500; // Keuntungan bersih Anda per transaksi
+            
+            const products = filtered.map(p => ({
+                sku: p.buyer_sku_code,
+                name: p.product_name,
+                price: p.price + marginProfit
+            }));
+
+            // Jika hasil filter kosong setelah dicari
+            if (products.length === 0) {
+                return res.status(200).json({ 
+                    message: `Produk untuk brand '${brand}' saat ini tidak tersedia atau sedang gangguan di Digiflazz.`,
+                    products: [] 
+                });
+            }
+
+            return res.status(200).json(products);
+        }
+        
+        return res.status(400).json({ message: 'Gagal mengambil data, format data dari pusat tidak valid.' });
     } catch (error) {
         return res.status(500).json({ message: 'Server error: ' + error.message });
     }
