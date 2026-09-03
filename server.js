@@ -104,7 +104,8 @@ app.post('/api/create-transaction', async (req, res) => {
             return res.status(400).json({ message: 'Target ID, Produk, dan Harga wajib diisi!' });
         }
 
-        const orderId = 'TWIDY-' + Date.now();
+        // TRIK AMPUH: Sisipkan productCode ke dalam Order ID pakai pemisah garis bawah (_)
+        const orderId = `TW_${productCode}_${Date.now()}`;
         const amount = parseInt(price);
 
         const midtransServerKey = process.env.MIDTRANS_SERVER_KEY;
@@ -156,7 +157,7 @@ app.post('/api/create-transaction', async (req, res) => {
     }
 });
 
-// 3. Endpoint Webhook Midtrans (GET & POST)
+// 3. Endpoint Webhook Midtrans (Ekstrak Produk dari Order ID)
 app.get('/api/webhook', (req, res) => {
     return res.status(200).json({ status: "OK", message: "Webhook endpoint is active." });
 });
@@ -175,6 +176,7 @@ app.post('/api/webhook', async (req, res) => {
         if (transactionStatus === 'settlement' || (transactionStatus === 'capture' && fraudStatus === 'accept')) {
             const orderId = notification.order_id;
             
+            // Ambil nomor HP tujuan
             let targetId = '';
             if (notification.customer_details) {
                 const fullName = notification.customer_details.full_name || '';
@@ -183,14 +185,13 @@ app.post('/api/webhook', async (req, res) => {
                 if (!targetId) targetId = notification.customer_details.last_name || '';
             }
 
+            // EKSTRAK PASTI: Ambil SKU produk dari dalam order_id (TW_SKU_TIMESTAMP)
             let buyerSkuCode = '';
-            if (notification.item_details && notification.item_details.length > 0) {
-                const item = notification.item_details[0];
-                buyerSkuCode = item.id || item.sku || '';
-                
-                if (!buyerSkuCode && item.name) {
-                    const nameParts = item.name.split(' ');
-                    buyerSkuCode = nameParts[nameParts.length - 1];
+            if (orderId && orderId.includes('_')) {
+                const orderParts = orderId.split('_');
+                // orderParts[0] = 'TW', orderParts[1] = KODE PRODUK, orderParts[2] = TIMESTAMP
+                if (orderParts.length >= 3) {
+                    buyerSkuCode = orderParts[1];
                 }
             }
 
