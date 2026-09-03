@@ -185,6 +185,59 @@
             </div>
             <div id="statusResultContainer"></div>
         </div>
+
+        <!-- VIEW NOTA / STRUK SUKSES PEMBAYARAN -->
+        <div id="viewInvoice" class="hidden fade-in">
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-md mb-6">
+                <div class="text-center pb-4 border-b border-dashed border-slate-200">
+                    <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-2 text-xl">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <h2 class="text-base font-extrabold text-slate-800">Pembayaran Berhasil!</h2>
+                    <p class="text-[11px] text-slate-500">Transaksi Anda sedang diproses otomatis ke pusat.</p>
+                </div>
+
+                <div class="py-4 space-y-3 text-xs">
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Order ID</span>
+                        <span id="invOrderId" class="font-bold text-slate-700 font-mono">-</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Tanggal</span>
+                        <span id="invDate" class="font-medium text-slate-700">-</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Tujuan / No HP</span>
+                        <span id="invTarget" class="font-bold text-blue-600">-</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Produk</span>
+                        <span id="invProduct" class="font-bold text-slate-700 text-right">-</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Total Bayar</span>
+                        <span id="invAmount" class="font-extrabold text-emerald-600">-</span>
+                    </div>
+                    <div class="flex justify-between items-center pt-2 border-t border-slate-100">
+                        <span class="text-slate-400">Status Server</span>
+                        <span id="invStatus" class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700">MEMPROSES</span>
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-dashed border-slate-200 flex gap-2">
+                    <button onclick="window.print()" class="w-1/2 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl font-bold text-xs transition">
+                        <i class="fas fa-print mr-1"></i> Cetak Struk
+                    </button>
+                    <a id="invWaBtn" href="#" target="_blank" class="w-1/2 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl font-bold text-xs text-center transition flex items-center justify-center">
+                        <i class="fab fa-whatsapp mr-1 text-sm"></i> Komplain
+                    </a>
+                </div>
+            </div>
+
+            <button onclick="switchView('catalog')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-xs transition shadow-md">
+                Kembali ke Beranda
+            </button>
+        </div>
     </main>
 
     <!-- Bottom Nav -->
@@ -206,6 +259,8 @@
     </div>
 
     <script>
+        let currentProductName = '';
+
         function filterCategory(categoryName) {
             document.querySelectorAll('.menu-cat').forEach(el => el.classList.remove('bg-blue-50', 'border-blue-500'));
             const activeMenu = document.getElementById('menu-' + categoryName);
@@ -220,6 +275,7 @@
             document.getElementById('viewCatalog').classList.add('hidden');
             document.getElementById('viewCheckout').classList.add('hidden');
             document.getElementById('viewStatus').classList.add('hidden');
+            document.getElementById('viewInvoice').classList.add('hidden');
             
             document.getElementById('nav-catalog').className = "flex flex-col items-center hover:text-blue-600 transition text-slate-400";
             document.getElementById('nav-status').className = "flex flex-col items-center hover:text-blue-600 transition text-slate-400";
@@ -232,6 +288,9 @@
                 document.getElementById('viewStatus').classList.remove('hidden');
                 document.getElementById('btnBack').classList.remove('hidden');
                 document.getElementById('nav-status').className = "flex flex-col items-center text-blue-600 transition";
+            } else if(view === 'invoice') {
+                document.getElementById('viewInvoice').classList.remove('hidden');
+                document.getElementById('btnBack').classList.remove('hidden');
             }
             window.scrollTo(0,0);
         }
@@ -279,7 +338,7 @@
 
                 if (res.ok && Array.isArray(products) && products.length > 0) {
                     container.innerHTML = products.map(p => `
-                        <label class="border border-slate-200 p-2.5 rounded-lg cursor-pointer hover:border-blue-600 flex flex-col">
+                        <label class="border border-slate-200 p-2.5 rounded-lg cursor-pointer hover:border-blue-600 flex flex-col" onclick="currentProductName='${p.name.replace(/'/g, "")}'">
                             <input type="radio" name="nominal" value="${p.sku}" data-price="${p.price}" required class="mb-1">
                             <span class="text-[11px] font-bold text-slate-800 mt-1 truncate" title="${p.name}">${p.name}</span>
                             <span class="text-[10px] text-blue-600">Rp ${p.price.toLocaleString('id-ID')}</span>
@@ -294,17 +353,52 @@
             }
         }
 
-        function checkOrderStatus() {
-            const query = document.getElementById('searchOrderId').value;
+        async function checkOrderStatus() {
+            const query = document.getElementById('searchOrderId').value.trim();
             const container = document.getElementById('statusResultContainer');
             if(!query) {
                 alert("Masukkan Order ID atau Nomor HP terlebih dahulu!");
                 return;
             }
-            container.innerHTML = `<div class="bg-white p-4 rounded-xl border border-slate-200 text-center text-xs text-slate-500">Mencari data transaksi...</div>`;
-            setTimeout(() => {
-                container.innerHTML = `<div class="bg-white p-4 rounded-xl border border-slate-200 text-center text-xs text-slate-600">Belum ada riwayat transaksi untuk "${query}" di sesi browser ini. Silakan hubungi Bantuan WhatsApp jika ada kendala.</div>`;
-            }, 500);
+            container.innerHTML = `<div class="bg-white p-4 rounded-xl border border-slate-200 text-center text-xs text-slate-500"><i class="fas fa-spinner fa-spin mr-1"></i> Mencari data transaksi...</div>`;
+            
+            try {
+                const res = await fetch(`/api/check-status/${encodeURIComponent(query)}`);
+                const result = await res.json();
+
+                if(res.ok && result.success && result.data.length > 0) {
+                    container.innerHTML = result.data.map(trx => `
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-3 text-xs space-y-2">
+                            <div class="flex justify-between border-b pb-2">
+                                <span class="font-mono font-bold text-blue-600">${trx.order_id}</span>
+                                <span class="px-2 py-0.5 rounded text-[9px] font-bold ${trx.status.includes('SUCCESS') ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">${trx.status}</span>
+                            </div>
+                            <div class="flex justify-between"><span class="text-slate-400">Tujuan:</span><span class="font-bold">${trx.target_id}</span></div>
+                            <div class="flex justify-between"><span class="text-slate-400">Produk:</span><span class="font-bold text-right">${trx.product_name}</span></div>
+                            <div class="flex justify-between"><span class="text-slate-400">Total:</span><span class="font-bold text-emerald-600">Rp ${trx.amount.toLocaleString('id-ID')}</span></div>
+                            <div class="flex justify-between"><span class="text-slate-400">SN / Token:</span><span class="font-mono text-slate-700">${trx.sn}</span></div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = `<div class="bg-white p-4 rounded-xl border border-slate-200 text-center text-xs text-slate-600">Tidak ada riwayat transaksi ditemukan untuk "<b>${query}</b>". Silakan pastikan Order ID atau Nomor HP benar.</div>`;
+                }
+            } catch (err) {
+                container.innerHTML = `<div class="bg-white p-4 rounded-xl border border-slate-200 text-center text-xs text-red-500">Gagal terhubung ke server.</div>`;
+            }
+        }
+
+        function showInvoice(orderId, targetId, productName, amount) {
+            document.getElementById('invOrderId').innerText = orderId;
+            document.getElementById('invDate').innerText = new Date().toLocaleString('id-ID');
+            document.getElementById('invTarget').innerText = targetId;
+            document.getElementById('invProduct').innerText = productName;
+            document.getElementById('invAmount').innerText = 'Rp ' + parseInt(amount).toLocaleString('id-ID');
+            document.getElementById('invStatus').innerText = 'PENDING / DIPROSES';
+            
+            const waText = encodeURIComponent(`Halo Admin Twidyshop, saya mau cek transaksi dengan Order ID: ${orderId} dan tujuan ${targetId}. Apakah ada kendala?`);
+            document.getElementById('invWaBtn').href = `https://wa.me/628970108026?text=${waText}`;
+
+            switchView('invoice');
         }
 
         document.getElementById('formCheckout').addEventListener('submit', async function(e) {
@@ -321,6 +415,7 @@
 
             const productCode = selectedNomor.value;
             const price = selectedNomor.getAttribute('data-price');
+            const productName = currentProductName || productCode;
             const originalText = btnPay.innerHTML;
 
             btnPay.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Menyiapkan Pembayaran...';
@@ -330,17 +425,25 @@
                 const response = await fetch('/api/create-transaction', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ targetId, productCode, price }) 
+                    body: JSON.stringify({ targetId, productCode, price, productName }) 
                 });
 
                 const data = await response.json();
 
                 if (response.ok && data.token) {
                     window.snap.pay(data.token, {
-                        onSuccess: function(result){ alert("Pembayaran Berhasil! Pesanan diproses otomatis."); console.log(result);},
-                        onPending: function(result){ alert("Menunggu pembayaran Anda."); console.log(result);},
-                        onError: function(result){ alert("Pembayaran Gagal!"); console.log(result);},
-                        onClose: function(){ alert("Popup pembayaran ditutup."); }
+                        onSuccess: function(result){ 
+                            showInvoice(data.order_id, targetId, productName, price);
+                        },
+                        onPending: function(result){ 
+                            showInvoice(data.order_id, targetId, productName, price);
+                        },
+                        onError: function(result){ 
+                            alert("Pembayaran Gagal!"); 
+                        },
+                        onClose: function(){ 
+                            console.log("Popup pembayaran ditutup."); 
+                        }
                     });
                 } else {
                     alert("Error Midtrans: " + JSON.stringify(data.error || data.message));
