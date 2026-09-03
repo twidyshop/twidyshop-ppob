@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TWIDY SHOP - Pusat Top Up & PPOB Terlengkap</title>
-    <!-- Favicon dipastikan terbaca -->
     <link rel="icon" href="/icontshop.png" type="image/png">
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -14,12 +13,17 @@
     <style>
         .fade-in { animation: fadeIn 0.25s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-        /* Teks Produk Auto Height - Tidak Kepotong Lagi */
+        
+        /* CSS MUTLAK: Teks nama produk dijamin tidak akan pernah kepotong */
         .product-title {
-            white-space: normal;
-            word-wrap: break-word;
-            line-height: 1.25rem;
+            display: block !important;
+            white-space: normal !important;
+            word-wrap: break-word !important;
+            overflow: visible !important;
+            height: auto !important;
+            max-height: none !important;
         }
+
         .modal-overlay { background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px); }
         .blinking { animation: blinker 1.5s linear infinite; }
         @keyframes blinker { 50% { opacity: 0.3; } }
@@ -74,7 +78,7 @@
                 </div>
             </div>
 
-            <!-- CONTAINER BRAND DINAMIS (Responsif) -->
+            <!-- CONTAINER BRAND / PRODUK -->
             <div id="dynamicBrandContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-8"></div>
         </div>
 
@@ -89,7 +93,6 @@
             </div>
 
             <form id="formCheckout" class="md:grid md:grid-cols-12 md:gap-6">
-                <!-- Sisi Kiri / Atas -->
                 <div class="md:col-span-5 lg:col-span-4 space-y-6">
                     <div class="bg-white p-5 md:p-6 rounded-2xl border border-slate-200 shadow-sm">
                         <label id="inputLabelText" class="block text-sm md:text-base font-bold text-slate-800 mb-2 md:mb-3">Masukkan Data Tujuan</label>
@@ -101,20 +104,18 @@
                     </button>
                 </div>
 
-                <!-- Sisi Kanan / Bawah -->
                 <div class="md:col-span-7 lg:col-span-8 bg-white p-5 md:p-6 rounded-2xl border border-slate-200 shadow-sm mt-6 md:mt-0">
                     <label class="block text-sm md:text-base font-bold text-slate-800 mb-4">Pilih Nominal Produk</label>
-                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3" id="nominalOptions"></div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" id="nominalOptions"></div>
                 </div>
 
-                <!-- Tombol Pay versi Mobile -->
                 <button type="submit" id="btnPreparePayMobile" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-600/20 text-sm mt-6 transition disabled:bg-slate-400 md:hidden">
                     Lanjut Konfirmasi
                 </button>
             </form>
         </div>
 
-        <!-- VIEW RIWAYAT PEMBELIAN (AUTO UPDATE) -->
+        <!-- VIEW RIWAYAT -->
         <div id="viewHistory" class="hidden fade-in max-w-3xl mx-auto">
             <div class="bg-white p-6 md:p-8 rounded-2xl border border-slate-200 shadow-sm mb-6 text-center">
                 <div class="w-14 h-14 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
@@ -127,7 +128,7 @@
             <div id="historyResultContainer" class="space-y-4"></div>
         </div>
 
-        <!-- POPUP KONFIRMASI PESANAN -->
+        <!-- POPUP KONFIRMASI -->
         <div id="modalConfirm" class="hidden fixed inset-0 z-[100] flex items-center justify-center px-4 modal-overlay fade-in">
             <div class="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl">
                 <div class="bg-blue-600 p-5 text-center text-white">
@@ -175,8 +176,7 @@
             'TELKOMSEL': 'bg-red-600', 'INDOSAT': 'bg-yellow-500', 'AXIS': 'bg-purple-600',
             'XL': 'bg-blue-700', 'TRI': 'bg-slate-800', 'SMARTFREN': 'bg-pink-600', 'BY.U': 'bg-blue-500',
             'PLN': 'bg-amber-500', 'MOBILE LEGENDS': 'bg-indigo-900', 'FREE FIRE': 'bg-orange-600',
-            'PUBG MOBILE': 'bg-slate-900', 'GENSHIN IMPACT': 'bg-slate-700',
-            'DANA': 'bg-blue-400', 'OVO': 'bg-purple-700', 'GO PAY': 'bg-blue-500', 'SHOPEE PAY': 'bg-orange-500'
+            'DANA': 'bg-blue-400', 'OVO': 'bg-purple-700', 'GO PAY': 'bg-blue-500', 'GOPAY': 'bg-blue-500', 'SHOPEE PAY': 'bg-orange-500'
         };
 
         function saveToHistory(orderId) {
@@ -202,7 +202,7 @@
                 if(res.ok && Array.isArray(brands) && brands.length > 0) {
                     container.innerHTML = brands.map(brand => {
                         let initials = brand.substring(0, 2).toUpperCase();
-                        let bColor = brandStyles[brand.toUpperCase()] || 'bg-slate-700';
+                        let bColor = brandStyles[brand.toUpperCase()] || 'bg-blue-600';
                         return `
                             <div onclick="openCheckout('${brand}', '${categoryName}', '${bColor}')" class="bg-white p-4 md:p-5 rounded-2xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 hover:shadow-md flex items-center gap-4 transition">
                                 <div class="w-12 h-12 md:w-14 md:h-14 rounded-xl shrink-0 flex items-center justify-center text-white font-extrabold shadow-inner text-sm md:text-base ${bColor}">${initials}</div>
@@ -211,7 +211,7 @@
                         `;
                     }).join('');
                 } else {
-                    container.innerHTML = `<div class="col-span-full text-center text-sm text-red-500 py-10 font-bold">Belum ada produk.</div>`;
+                    container.innerHTML = `<div class="col-span-full text-center text-sm text-red-500 py-10 font-bold">Belum ada produk aktif.</div>`;
                 }
             } catch (err) {
                 container.innerHTML = `<div class="col-span-full text-center text-sm text-red-500 py-10">Gagal memuat.</div>`;
@@ -261,7 +261,7 @@
             
             btnPay.disabled = true;
             btnPayMobile.disabled = true;
-            container.innerHTML = `<div class="col-span-full text-center text-sm text-slate-500 py-10"><i class="fas fa-spinner fa-spin mr-2 text-xl"></i> Mengambil produk...</div>`;
+            container.innerHTML = `<div class="col-span-full text-center text-sm text-slate-500 py-10"><i class="fas fa-spinner fa-spin mr-2 text-xl"></i> Mengambil semua produk...</div>`;
 
             try {
                 const res = await fetch('/api/get-products', {
@@ -273,23 +273,22 @@
                 const products = await res.json();
                 if (res.ok && Array.isArray(products) && products.length > 0) {
                     container.innerHTML = products.map(p => `
-                        <label class="border border-slate-200 p-3 md:p-4 rounded-xl cursor-pointer hover:border-blue-600 hover:shadow-md flex flex-col bg-white transition min-h-[90px]" 
+                        <label class="border border-slate-200 p-3 md:p-4 rounded-xl cursor-pointer hover:border-blue-600 hover:shadow-md flex flex-col bg-white transition min-h-[100px]" 
                                onclick="currentProductName='${p.name.replace(/'/g, "")}'; currentProductCode='${p.sku}'; currentPrice=${p.price};">
                             <input type="radio" name="nominal" required class="mb-2 shrink-0 w-4 h-4 text-blue-600">
-                            <!-- Tinggi teks akan otomatis menyesuaikan, tidak kepotong -->
                             <div class="flex-grow flex flex-col justify-between">
-                                <span class="text-[11px] md:text-xs font-bold text-slate-800 product-title" title="${p.name}">${p.name}</span>
-                                <span class="text-[11px] md:text-sm text-blue-600 font-extrabold mt-2">Rp ${p.price.toLocaleString('id-ID')}</span>
+                                <span class="text-xs md:text-sm font-bold text-slate-800 product-title">${p.name}</span>
+                                <span class="text-xs md:text-sm text-blue-600 font-extrabold mt-3">Rp ${p.price.toLocaleString('id-ID')}</span>
                             </div>
                         </label>
                     `).join('');
                     btnPay.disabled = false;
                     btnPayMobile.disabled = false;
                 } else {
-                    container.innerHTML = `<div class="col-span-full text-center text-sm text-red-500 font-bold py-10">Produk kosong.</div>`;
+                    container.innerHTML = `<div class="col-span-full text-center text-sm text-red-500 font-bold py-10">Tidak ada produk ditemukan untuk brand ini.</div>`;
                 }
             } catch (e) {
-                container.innerHTML = `<div class="col-span-full text-center text-sm text-red-500 py-10">Gagal memuat.</div>`;
+                container.innerHTML = `<div class="col-span-full text-center text-sm text-red-500 py-10">Gagal memuat produk.</div>`;
             }
         }
 
