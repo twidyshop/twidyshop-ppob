@@ -24,7 +24,10 @@
                 <button id="btnBack" class="hidden text-white hover:text-blue-200 transition" onclick="switchView('catalog')">
                     <i class="fas fa-arrow-left text-lg"></i>
                 </button>
-                <h1 class="text-xl font-extrabold tracking-wide">TWIDY<span class="text-yellow-300">SHOP</span></h1>
+                <!-- Logo berfungsi sebagai Beranda -->
+                <div onclick="switchView('catalog')" class="cursor-pointer flex items-center gap-2">
+                    <h1 class="text-xl font-extrabold tracking-wide">TWIDY<span class="text-yellow-300">SHOP</span></h1>
+                </div>
             </div>
             <span class="text-xs bg-blue-700 px-2.5 py-1 rounded-full font-medium text-blue-100"><i class="fas fa-circle text-emerald-400 text-[8px] mr-1"></i> Otomatis 24 Jam</span>
         </div>
@@ -166,23 +169,40 @@
                 </button>
             </form>
         </div>
+
+        <!-- VIEW CEK STATUS -->
+        <div id="viewStatus" class="hidden fade-in">
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm mb-4 text-center">
+                <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3 text-lg">
+                    <i class="fas fa-receipt"></i>
+                </div>
+                <h2 class="font-bold text-slate-800 text-sm mb-1">Cek Status Transaksi</h2>
+                <p class="text-[11px] text-slate-400 mb-4">Masukkan Nomor HP atau Order ID untuk mengecek status pesanan.</p>
+                
+                <div class="flex gap-2">
+                    <input type="text" id="searchOrderId" placeholder="Masukkan Order ID / No HP" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-600">
+                    <button onclick="checkOrderStatus()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 rounded-lg text-xs font-bold shrink-0">Cek</button>
+                </div>
+            </div>
+            <div id="statusResultContainer"></div>
+        </div>
     </main>
 
     <!-- Bottom Nav -->
     <div class="fixed bottom-0 w-full bg-white border-t border-slate-200 z-40">
         <div class="max-w-md mx-auto flex justify-around p-2 text-slate-400">
-            <button onclick="switchView('catalog')" class="flex flex-col items-center text-blue-600">
+            <button onclick="switchView('catalog')" id="nav-catalog" class="flex flex-col items-center text-blue-600 transition">
                 <i class="fas fa-house text-base"></i>
                 <span class="text-[9px] font-bold mt-0.5">Beranda</span>
             </button>
-            <div onclick="alert('Fitur Cek Status segera hadir!')" class="flex flex-col items-center hover:text-blue-600 cursor-pointer">
+            <button onclick="switchView('status')" id="nav-status" class="flex flex-col items-center hover:text-blue-600 transition">
                 <i class="fas fa-receipt text-base"></i>
                 <span class="text-[9px] font-bold mt-0.5">Cek Status</span>
-            </div>
-            <div onclick="alert('Hubungi Admin via WhatsApp untuk bantuan.')" class="flex flex-col items-center hover:text-blue-600 cursor-pointer">
+            </button>
+            <a href="https://wa.me/628970108026?text=Halo%20Admin%20Twidyshop,%20saya%20mau%20tanya%20terkait%20transaksi." target="_blank" class="flex flex-col items-center hover:text-blue-600 transition">
                 <i class="fas fa-headset text-base"></i>
                 <span class="text-[9px] font-bold mt-0.5">Bantuan</span>
-            </div>
+            </a>
         </div>
     </div>
 
@@ -198,17 +218,31 @@
         }
 
         function switchView(view) {
+            // Sembunyikan semua view utama
+            document.getElementById('viewCatalog').classList.add('hidden');
+            document.getElementById('viewCheckout').classList.add('hidden');
+            document.getElementById('viewStatus').classList.add('hidden');
+            
+            // Reset active style bottom nav
+            document.getElementById('nav-catalog').className = "flex flex-col items-center hover:text-blue-600 transition text-slate-400";
+            document.getElementById('nav-status').className = "flex flex-col items-center hover:text-blue-600 transition text-slate-400";
+
             if(view === 'catalog') {
                 document.getElementById('viewCatalog').classList.remove('hidden');
-                document.getElementById('viewCheckout').classList.add('hidden');
                 document.getElementById('btnBack').classList.add('hidden');
-                window.scrollTo(0,0);
+                document.getElementById('nav-catalog').className = "flex flex-col items-center text-blue-600 transition";
+            } else if(view === 'status') {
+                document.getElementById('viewStatus').classList.remove('hidden');
+                document.getElementById('btnBack').classList.remove('hidden');
+                document.getElementById('nav-status').className = "flex flex-col items-center text-blue-600 transition";
             }
+            window.scrollTo(0,0);
         }
 
         async function openCheckout(brandName, categoryType, colorClass, initials) {
             document.getElementById('viewCatalog').classList.add('hidden');
             document.getElementById('viewCheckout').classList.remove('hidden');
+            document.getElementById('viewStatus').classList.add('hidden');
             document.getElementById('btnBack').classList.remove('hidden');
             
             document.getElementById('checkoutTitle').innerText = brandName;
@@ -238,7 +272,6 @@
             window.scrollTo(0,0);
 
             try {
-                // KIRIM CATEGORY JUGA KE BACKEND SUPAYA BISA DIFILTER KHUSUS PULSA REGULER
                 const res = await fetch('/api/get-products', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -262,6 +295,20 @@
             } catch (e) {
                 container.innerHTML = `<div class="col-span-2 text-center text-xs text-red-500 py-6">Gagal memuat dari server.</div>`;
             }
+        }
+
+        function checkOrderStatus() {
+            const query = document.getElementById('searchOrderId').value;
+            const container = document.getElementById('statusResultContainer');
+            if(!query) {
+                alert("Masukkan Order ID atau Nomor HP terlebih dahulu!");
+                return;
+            }
+            container.innerHTML = `<div class="bg-white p-4 rounded-xl border border-slate-200 text-center text-xs text-slate-500">Mencari data transaksi...</div>`;
+            // Contoh simulasi pencarian status (bisa disesuaikan dengan endpoint status kamu jika ada)
+            setTimeout(() => {
+                container.innerHTML = `<div class="bg-white p-4 rounded-xl border border-slate-200 text-center text-xs text-slate-600">Belum ada riwayat transaksi untuk "${query}" di sesi browser ini. Silakan hubungi Bantuan WhatsApp jika ada kendala.</div>`;
+            }, 500);
         }
 
         document.getElementById('formCheckout').addEventListener('submit', async function(e) {
@@ -304,7 +351,7 @@
                 }
             } catch (error) {
                 console.error(error);
-                alert("Gagal terhubung ke server backend Vercel.");
+                alert("Gagal terhubung ke server backend Render.");
             } finally {
                 btnPay.innerHTML = originalText;
                 btnPay.disabled = false;
