@@ -1,23 +1,28 @@
 const express = require('express');
 const crypto = require('crypto');
 const cors = require('cors');
+const path = require('path');
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 
+// Agar file index.html dan aset frontend terbaca di Render
+app.use(express.static(path.join(__dirname, 'public')));
+// Kalau file index.html lu taruh di luar folder public (di root utama), ganti baris atas jadi: app.use(express.static(__dirname));
+
 let cachedProducts = null;
 let cacheTimestamp = 0;
-const CACHE_DURATION = 5 * 60 * 1000; 
+const CACHE_DURATION = 5 * 60 * 1000; // Cache 5 menit
 
-// Endpoint Ambil Produk (Pengganti api/get-products.js)
+// Endpoint Ambil Produk Digiflazz
 app.post('/api/get-products', async (req, res) => {
     const { brand, category } = req.body; 
     const username = process.env.DIGIFLAZZ_USERNAME;
     const apiKey = process.env.DIGIFLAZZ_API_KEY;
 
     if (!username || !apiKey) {
-        return res.status(500).json({ message: 'API Key Digiflazz belum diatur' });
+        return res.status(500).json({ message: 'API Key Digiflazz belum diatur di Environment Variables Render' });
     }
 
     try {
@@ -41,7 +46,7 @@ app.post('/api/get-products', async (req, res) => {
                 cachedProducts = data; 
                 cacheTimestamp = now;  
             } else {
-                return res.status(400).json({ message: 'Gagal ambil data dari pusat' });
+                return res.status(400).json({ message: 'Gagal ambil data dari pusat Digiflazz' });
             }
         }
 
@@ -55,12 +60,16 @@ app.post('/api/get-products', async (req, res) => {
             if (!isBrandMatch) return false;
 
             if (category === 'pulsa') {
-                if (itemName.includes('DATA') || itemName.includes('INTERNET') || itemName.includes('VOUCHER') || itemName.includes('PAKET')) {
+                if (itemName.includes('DATA') || 
+                    itemName.includes('INTERNET') || 
+                    itemName.includes('VOUCHER') || 
+                    itemName.includes('WIFI') || 
+                    itemName.includes('PAKET')) {
                     return false;
                 }
             }
 
-            if (item.buyer_product_status === false || item.buyer_product_status === 0) {
+            if (item.buyer_product_status === false || item.buyer_product_status === 0 || item.buyer_product_status === '0') {
                 return false; 
             }
 
@@ -69,10 +78,12 @@ app.post('/api/get-products', async (req, res) => {
 
         filtered.sort((a, b) => a.price - b.price);
 
+        const marginProfit = 200; // Profit promo Rp 200
+        
         const products = filtered.map(p => ({
             sku: p.buyer_sku_code,
             name: p.product_name,
-            price: p.price + 200 // Profit promo Rp 200
+            price: p.price + marginProfit
         }));
 
         return res.status(200).json(products);
@@ -82,6 +93,5 @@ app.post('/api/get-products', async (req, res) => {
     }
 });
 
-// Jalankan server di port dari environment Render
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
