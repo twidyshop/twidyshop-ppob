@@ -13,8 +13,6 @@
     <style>
         .fade-in { animation: fadeIn 0.25s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-        
-        /* CSS MUTLAK: Teks nama produk dijamin tidak akan pernah kepotong */
         .product-title {
             display: block !important;
             white-space: normal !important;
@@ -23,7 +21,6 @@
             height: auto !important;
             max-height: none !important;
         }
-
         .modal-overlay { background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px); }
         .blinking { animation: blinker 1.5s linear infinite; }
         @keyframes blinker { 50% { opacity: 0.3; } }
@@ -58,7 +55,7 @@
                 <i class="fas fa-bolt absolute -right-4 -bottom-6 text-8xl md:text-9xl text-white/10"></i>
             </div>
 
-            <!-- Kategori Menu Responsif -->
+            <!-- Kategori Menu -->
             <div class="grid grid-cols-4 md:grid-cols-4 lg:grid-cols-8 gap-3 mb-8 text-center">
                 <div onclick="selectCategory('pulsa')" id="menu-pulsa" class="menu-cat bg-white p-3 md:p-4 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition">
                     <div class="w-10 h-10 md:w-12 md:h-12 mx-auto rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2"><i class="fas fa-mobile-screen-button md:text-lg"></i></div>
@@ -78,14 +75,13 @@
                 </div>
             </div>
 
-            <!-- CONTAINER BRAND / PRODUK -->
             <div id="dynamicBrandContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-8"></div>
         </div>
 
         <!-- FORM CHECKOUT -->
         <div id="viewCheckout" class="hidden fade-in">
             <div class="bg-white p-5 md:p-6 rounded-2xl border border-slate-200 shadow-sm mb-6 flex items-center gap-4">
-                <div id="checkoutLogoContainer" class="w-14 h-14 md:w-16 md:h-16 rounded-xl flex items-center justify-center shrink-0 font-extrabold text-white text-2xl shadow-inner">TW</div>
+                <div id="checkoutLogoContainer" class="w-14 h-14 md:w-16 md:h-16 rounded-xl flex items-center justify-center shrink-0 font-extrabold text-white text-2xl shadow-inner bg-blue-600">TW</div>
                 <div>
                     <h2 id="checkoutTitle" class="font-extrabold text-slate-800 text-lg md:text-xl">Nama Produk</h2>
                     <p class="text-xs text-emerald-600 font-bold mt-1"><i class="fas fa-bolt"></i> Pengiriman Instan</p>
@@ -199,6 +195,7 @@
             try {
                 const res = await fetch(`/api/get-brands/${categoryName}`);
                 const brands = await res.json();
+                
                 if(res.ok && Array.isArray(brands) && brands.length > 0) {
                     container.innerHTML = brands.map(brand => {
                         let initials = brand.substring(0, 2).toUpperCase();
@@ -211,10 +208,10 @@
                         `;
                     }).join('');
                 } else {
-                    container.innerHTML = `<div class="col-span-full text-center text-sm text-red-500 py-10 font-bold">Belum ada produk aktif.</div>`;
+                    container.innerHTML = `<div class="col-span-full text-center text-sm text-red-500 py-10 font-bold">Tidak ada brand ditemukan.</div>`;
                 }
             } catch (err) {
-                container.innerHTML = `<div class="col-span-full text-center text-sm text-red-500 py-10">Gagal memuat.</div>`;
+                container.innerHTML = `<div class="col-span-full text-center text-sm text-red-500 py-10">Gagal memuat data.</div>`;
             }
         }
 
@@ -261,13 +258,13 @@
             
             btnPay.disabled = true;
             btnPayMobile.disabled = true;
-            container.innerHTML = `<div class="col-span-full text-center text-sm text-slate-500 py-10"><i class="fas fa-spinner fa-spin mr-2 text-xl"></i> Mengambil semua produk...</div>`;
+            container.innerHTML = `<div class="col-span-full text-center text-sm text-slate-500 py-10"><i class="fas fa-spinner fa-spin mr-2 text-xl"></i> Mengambil produk...</div>`;
 
             try {
                 const res = await fetch('/api/get-products', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ brand: brandName, category: categoryType })
+                    body: JSON.stringify({ brand: brandName })
                 });
                 
                 const products = await res.json();
