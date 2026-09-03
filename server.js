@@ -2,36 +2,39 @@ const express = require('express');
 const crypto = require('crypto');
 const cors = require('cors');
 const path = require('path');
-const sqlite3 = require('sqlite3').verbose(); // Tambahan untuk database permanen
+const fs = require('fs'); // Modul bawaan untuk baca/tulis file JSON
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Inisialisasi Database SQLite
-const db = new sqlite3.Database('./twidyshop_transactions.db', (err) => {
-    if (err) console.error("Gagal membuka database:", err.message);
-    else {
-        db.run(`CREATE TABLE IF NOT EXISTS transactions (
-            order_id TEXT PRIMARY KEY,
-            target_id TEXT,
-            product_code TEXT,
-            product_name TEXT,
-            amount INTEGER,
-            status TEXT,
-            sn TEXT,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )`);
-        console.log("Database siap.");
+// ==== FUNGSI DATABASE JSON ====
+const dbFile = path.join(__dirname, 'transactions.json');
+
+// Baca data JSON
+const readDB = () => {
+    try {
+        if (!fs.existsSync(dbFile)) return [];
+        const data = fs.readFileSync(dbFile, 'utf8');
+        return JSON.parse(data);
+    } catch (e) {
+        return [];
     }
-});
+};
+
+// Simpan data ke JSON (Maksimal simpan 50 transaksi terakhir agar file tidak berat)
+const saveDB = (data) => {
+    const limitedData = data.slice(-50); 
+    fs.writeFileSync(dbFile, JSON.stringify(limitedData, null, 2));
+};
+// ===============================
 
 let cachedProducts = null;
 let cacheTimestamp = 0;
 const CACHE_DURATION = 5 * 60 * 1000; 
 
-// 1. Endpoint Ambil Produk Digiflazz (Filter Diperketat)
+// 1. Endpoint Ambil Produk Digiflazz
 app.post('/api/get-products', async (req, res) => {
     const { brand, category } = req.body; 
     const username = process.env.DIGIFLAZZ_USERNAME;
@@ -64,7 +67,7 @@ app.post('/api/get-products', async (req, res) => {
             }
         }
 
-        let targetBrand = (brand || "").trim().toUpperCase().replace(/\s+/g, ''); // Hapus spasi untuk pencocokan (GOPAY = GO PAY)
+        let targetBrand = (brand || "").trim().toUpperCase().replace(/\s+/g, '');
 
         let filtered = data.filter(item => {
             if (!item.buyer_product_status || item.buyer_product_status === false || item.buyer_product_status === '0') return false;
@@ -72,11 +75,9 @@ app.post('/api/get-products', async (req, res) => {
             let itemBrand = (item.brand || "").trim().toUpperCase().replace(/\s+/g, '');
             let itemName = (item.product_name || "").toUpperCase();
             
-            // Pencocokan Merek yang Ketat
             let isMatch = (itemBrand === targetBrand) || (itemBrand.includes(targetBrand));
             if (!isMatch) return false;
 
-            // Filter Kategori agar tidak nyasar
             if (category === 'pulsa') {
                 if (itemName.includes('DATA') || itemName.includes('VOUCHER') || itemName.includes('WIFI') || itemName.includes('MASA AKTIF')) return false;
             } else if (category === 'pln') {
@@ -90,7 +91,7 @@ app.post('/api/get-products', async (req, res) => {
         const products = filtered.map(p => ({
             sku: p.buyer_sku_code,
             name: p.product_name,
-            price: p.price + 200 // Profit markup Rp 200 (Bisa disesuaikan)
+            price: p.price + 200 // Profit markup Rp 200
         }));
 
         return res.status(200).json(products);
@@ -111,12 +112,19 @@ app.post('/api/create-transaction', async (req, res) => {
 
         if (!midtransServerKey) return res.status(500).json({ message: 'MIDTRANS_SERVER_KEY belum diset!' });
 
-        // Simpan ke SQLite
-        db.run(`INSERT INTO transactions (order_id, target_id, product_code, product_name, amount, status, sn) 
-                VALUES (?, ?, ?, ?, ?, ?, ?)`, 
-                [orderId, targetId, productCode, productName, amount, 'PENDING', '-'], (err) => {
-            if (err) console.error("Gagal simpan DB:", err.message);
+        // Simpan transaksi awal ke JSON
+        const db = readDB();
+        db.push({
+            order_id: orderId,
+            target_id: targetId,
+            product_code: productCode,
+            product_name: productName,
+            amount: amount,
+            status: 'PENDING',
+            sn: '-',
+            created_at: new Date().toISOString()
         });
+        saveDB(db);
 
         const authString = Buffer.from(midtransServerKey + ':').toString('base64');
         const midtransResponse = await fetch('https://app.midtrans.com/snap/v1/transactions', {
@@ -142,15 +150,24 @@ app.post('/api/create-transaction', async (req, res) => {
     }
 });
 
-// 3. Endpoint Cek Status Transaksi (Riwayat)
+// 3. Endpoint Cek Status Transaksi (Dari JSON)
 app.get('/api/check-status/:query', (req, res) => {
-    const query = `%${req.params.query.trim()}%`;
+    const query = req.params.query.trim().toLowerCase();
+    const db = readDB();
     
-    db.all(`SELECT * FROM transactions WHERE order_id LIKE ? OR target_id LIKE ? ORDER BY created_at DESC LIMIT 10`, [query, query], (err, rows) => {
-        if (err) return res.status(500).json({ success: false, message: 'Database error' });
-        if (rows.length > 0) return res.status(200).json({ success: true, data: rows });
+    let matched = db.filter(trx => 
+        trx.order_id.toLowerCase().includes(query) || 
+        trx.target_id.toLowerCase().includes(query)
+    );
+
+    // Urutkan dari yang terbaru
+    matched.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    if (matched.length > 0) {
+        return res.status(200).json({ success: true, data: matched });
+    } else {
         return res.status(404).json({ success: false, message: 'Riwayat tidak ditemukan.' });
-    });
+    }
 });
 
 // 4. Endpoint Webhook Midtrans & Eksekusi Digiflazz
@@ -161,38 +178,44 @@ app.post('/api/webhook', async (req, res) => {
 
         const { transaction_status: transactionStatus, fraud_status: fraudStatus, order_id: orderId } = notification;
 
+        let db = readDB();
+        let trxIndex = db.findIndex(t => t.order_id === orderId);
+        if (trxIndex === -1) return res.status(200).send("Order not found");
+
         if (transactionStatus === 'settlement' || (transactionStatus === 'capture' && fraudStatus === 'accept')) {
-            // Update status processing
-            db.run(`UPDATE transactions SET status = 'PROCESSING' WHERE order_id = ?`, [orderId]);
+            // Update status ke processing
+            db[trxIndex].status = 'PROCESSING';
+            saveDB(db);
 
-            // Ambil data untuk Digiflazz dari DB
-            db.get(`SELECT target_id, product_code FROM transactions WHERE order_id = ?`, [orderId], async (err, row) => {
-                if (err || !row) return;
+            const username = process.env.DIGIFLAZZ_USERNAME;
+            const apiKey = process.env.DIGIFLAZZ_API_KEY;
+            const sign = crypto.createHash('md5').update(username + apiKey + orderId).digest('hex');
 
-                const username = process.env.DIGIFLAZZ_USERNAME;
-                const apiKey = process.env.DIGIFLAZZ_API_KEY;
-                const sign = crypto.createHash('md5').update(username + apiKey + orderId).digest('hex');
-
-                const digiflazzResponse = await fetch('https://api.digiflazz.com/v1/transaction', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        username: username,
-                        buyer_sku_code: row.product_code,
-                        customer_no: row.target_id,
-                        ref_id: orderId,
-                        sign: sign
-                    })
-                });
-
-                const digiflazzResult = await digiflazzResponse.json();
-                if (digiflazzResult && digiflazzResult.data) {
-                    db.run(`UPDATE transactions SET status = ?, sn = ? WHERE order_id = ?`, 
-                        [digiflazzResult.data.status, digiflazzResult.data.sn || '-', orderId]);
-                }
+            const digiflazzResponse = await fetch('https://api.digiflazz.com/v1/transaction', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: username,
+                    buyer_sku_code: db[trxIndex].product_code,
+                    customer_no: db[trxIndex].target_id,
+                    ref_id: orderId,
+                    sign: sign
+                })
             });
+
+            const digiflazzResult = await digiflazzResponse.json();
+            
+            if (digiflazzResult && digiflazzResult.data) {
+                // Tarik data terbaru lagi biar nggak bentrok, lalu simpan SN & Status Pusat
+                db = readDB();
+                trxIndex = db.findIndex(t => t.order_id === orderId);
+                db[trxIndex].status = digiflazzResult.data.status;
+                db[trxIndex].sn = digiflazzResult.data.sn || '-';
+                saveDB(db);
+            }
         } else if (['cancel', 'expire', 'deny'].includes(transactionStatus)) {
-            db.run(`UPDATE transactions SET status = 'FAILED' WHERE order_id = ?`, [orderId]);
+            db[trxIndex].status = 'FAILED';
+            saveDB(db);
         }
         return res.status(200).json({ message: "Status handled." });
     } catch (error) {
