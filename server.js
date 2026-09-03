@@ -9,7 +9,6 @@ app.use(express.json());
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ==== DATABASE SEMENTARA JSON ====
 const dbFile = path.join(__dirname, 'transactions.json');
 
 const readDB = () => {
@@ -23,16 +22,15 @@ const readDB = () => {
 };
 
 const saveDB = (data) => {
-    const limitedData = data.slice(-50); // Simpan 50 terakhir
+    const limitedData = data.slice(-50);
     fs.writeFileSync(dbFile, JSON.stringify(limitedData, null, 2));
 };
 
-// Fitur Cache (Agar tidak diblokir Digiflazz)
 let cachedProducts = null;
 let cacheTimestamp = 0;
-const CACHE_DURATION = 5 * 60 * 1000; // 5 Menit
+const CACHE_DURATION = 5 * 60 * 1000; 
 
-// 1. Endpoint Ambil Produk (Pencocokan Super Toleran)
+// 1. Endpoint Ambil Produk
 app.post('/api/get-products', async (req, res) => {
     const { brand, category } = req.body; 
     const username = process.env.DIGIFLAZZ_USERNAME;
@@ -64,32 +62,25 @@ app.post('/api/get-products', async (req, res) => {
             }
         }
 
-        // Hilangkan spasi/simbol untuk pencocokan (GOPAY, MOBILELEGENDS, dll)
         let targetBrand = (brand || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
         let targetCat = (category || "").toLowerCase();
 
         let filtered = data.filter(item => {
-            // Abaikan produk yang sedang ditutup/gangguan oleh Digiflazz
             if (item.buyer_product_status === false || item.seller_product_status === false) return false;
 
             let itemBrand = (item.brand || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
             let itemName = (item.product_name || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
             let itemCat = (item.category || "").toLowerCase().replace(/[^a-z]/g, ''); 
 
-            // FILTER KATEGORI (Membaca langsung dari kategori asli Digiflazz)
             if (targetCat === 'pulsa' && itemCat !== 'pulsa') return false;
             if (targetCat === 'games' && itemCat !== 'games') return false;
             if (targetCat === 'pln' && itemCat !== 'pln') return false;
             if (targetCat === 'emoney' && itemCat !== 'emoney' && itemCat !== 'ewallet') return false; 
 
-            // FILTER BRAND (Pencocokan dua arah yang toleran)
             let isMatch = false;
-            
-            // Jika merek Digiflazz ada di pencarian kita, ATAU sebaliknya
             if (itemBrand.includes(targetBrand) || (targetBrand.includes(itemBrand) && itemBrand.length > 3)) isMatch = true;
             if (itemName.includes(targetBrand)) isMatch = true;
 
-            // Handle Typo Digiflazz & Penamaan Nyeleneh
             if (targetBrand === 'MOBILELEGENDS' && (itemBrand.includes('MLBB') || itemName.includes('MOBILELEGEND'))) isMatch = true;
             if (targetBrand === 'PUBG' && (itemBrand.includes('PUBG') || itemName.includes('PUBG'))) isMatch = true;
             if (targetBrand === 'GOPAY' && (itemBrand.includes('GOPAY') || (itemBrand.includes('GO') && itemBrand.includes('PAY')))) isMatch = true;
@@ -101,7 +92,7 @@ app.post('/api/get-products', async (req, res) => {
         const products = filtered.map(p => ({
             sku: p.buyer_sku_code,
             name: p.product_name,
-            price: p.price + 200 // Keuntungan kamu Rp 200 per transaksi
+            price: p.price + 200 
         }));
 
         return res.status(200).json(products);
@@ -159,7 +150,7 @@ app.post('/api/create-transaction', async (req, res) => {
     }
 });
 
-// 3. Endpoint Cek Status Riwayat
+// 3. Endpoint Cek Status
 app.get('/api/check-status/:query?', (req, res) => {
     const query = (req.params.query || '').trim().toLowerCase();
     const db = readDB();
@@ -181,59 +172,118 @@ app.get('/api/check-status/:query?', (req, res) => {
     }
 });
 
-// 4. Endpoint Webhook Midtrans & Eksekusi Digiflazz
+// 4. Endpoint Webhook Midtrans & Eksekusi Digiflazz (DIJAMIN TEMBAK KE PUSAT)
 app.post('/api/webhook', async (req, res) => {
-    console.log("WEBHOOK MASUK DARI MIDTRANS:", JSON.stringify(req.body));
+    console.log("=== WEBHOOK MIDTRANS MASUK ===", JSON.stringify(req.body));
     try {
         const notification = req.body;
-        if (!notification || !notification.transaction_status) return res.status(200).send("OK");
+        if (!notification || !notification.transaction_status) {
+            return res.status(200).send("OK");
+        }
 
         const { transaction_status: transactionStatus, fraud_status: fraudStatus, order_id: orderId } = notification;
 
+        // Ambil data langsung dari database JSON lokal berdasarkan order_id
         let db = readDB();
-        let trxIndex = db.findIndex(t => t.order_id === orderId);
-        
-        if (trxIndex === -1) {
-            console.log("Pesanan tidak ditemukan di database lokal.");
-            return res.status(200).send("Order not found");
+        let trx = db.find(t => t.order_id === orderId);
+
+        let productCode = '';
+        let targetId = '';
+
+        if (trx) {
+            productCode = trx.product_code;
+            targetId = trx.target_id;
+        } else {
+            // Cadangan jika database JSON terhapus restart: bedah dari order_id dan customer_details
+            console.log("Perhatian: Transaksi tidak ditemukan di JSON lokal, mencoba ekstrak darurat...");
+            if (orderId && orderId.includes('_')) {
+                const parts = orderId.split('_');
+                // Format order_id kita: TW_productCode_timestamp -> productCode ada di index 1 sampai sebelum index terakhir
+                productCode = parts.slice(1, parts.length - 1).join('_');
+            }
+            if (notification.customer_details) {
+                targetId = notification.customer_details.last_name || '';
+            }
         }
 
+        console.log(`Ekstraksi Data -> SKU: ${productCode}, Tujuan: ${targetId}, Status Bayar: ${transactionStatus}`);
+
         if (transactionStatus === 'settlement' || (transactionStatus === 'capture' && fraudStatus === 'accept')) {
-            db[trxIndex].status = 'PROCESSING';
-            saveDB(db);
+            
+            if (!productCode || !targetId) {
+                console.error("GAGAL TEMBAK DIGIFLAZZ: Product Code atau Target ID kosong!", { productCode, targetId, orderId });
+                return res.status(200).send("Missing parameters");
+            }
 
             const username = process.env.DIGIFLAZZ_USERNAME;
             const apiKey = process.env.DIGIFLAZZ_API_KEY;
+
+            if (!username || !apiKey) {
+                console.error("GAGAL TEMBAK DIGIFLAZZ: Kredensial Digiflazz di environment belum diset!");
+                return res.status(200).send("Credentials missing");
+            }
+
             const sign = crypto.createHash('md5').update(username + apiKey + orderId).digest('hex');
 
+            console.log("Mengirim pesanan ke API Digiflazz...");
             const digiflazzResponse = await fetch('https://api.digiflazz.com/v1/transaction', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     username: username,
-                    buyer_sku_code: db[trxIndex].product_code,
-                    customer_no: db[trxIndex].target_id,
+                    buyer_sku_code: productCode,
+                    customer_no: targetId,
                     ref_id: orderId,
                     sign: sign
                 })
             });
 
             const digiflazzResult = await digiflazzResponse.json();
-            
+            console.log("RESPON DARI PUSAT DIGIFLAZZ:", JSON.stringify(digiflazzResult));
+
+            // Perbarui status di database lokal
+            db = readDB();
+            let trxIndex = db.findIndex(t => t.order_id === orderId);
+
+            let pusatStatus = 'PROCESSING';
+            let pusatSn = '-';
+
             if (digiflazzResult && digiflazzResult.data) {
-                db = readDB();
-                trxIndex = db.findIndex(t => t.order_id === orderId);
-                db[trxIndex].status = digiflazzResult.data.status;
-                db[trxIndex].sn = digiflazzResult.data.sn || '-';
+                pusatStatus = digiflazzResult.data.status || 'PROCESSING';
+                pusatSn = digiflazzResult.data.sn || '-';
+            }
+
+            if (trxIndex !== -1) {
+                db[trxIndex].status = pusatStatus;
+                db[trxIndex].sn = pusatSn;
+                saveDB(db);
+            } else {
+                db.push({
+                    order_id: orderId,
+                    target_id: targetId,
+                    product_code: productCode,
+                    product_name: "Produk " + productCode,
+                    amount: parseInt(notification.gross_amount || 0),
+                    status: pusatStatus,
+                    sn: pusatSn,
+                    created_at: new Date().toISOString()
+                });
                 saveDB(db);
             }
+
         } else if (['cancel', 'expire', 'deny'].includes(transactionStatus)) {
-            db[trxIndex].status = 'FAILED';
-            saveDB(db);
+            if (trx !== -1) {
+                let index = db.findIndex(t => t.order_id === orderId);
+                if (index !== -1) {
+                    db[index].status = 'FAILED';
+                    saveDB(db);
+                }
+            }
         }
-        return res.status(200).json({ message: "Status handled." });
+
+        return res.status(200).json({ message: "Webhook handled successfully." });
     } catch (error) {
-        console.error("WEBHOOK ERROR:", error);
+        console.error("FATAL ERROR DI WEBHOOK:", error);
         return res.status(200).json({ message: 'Error: ' + error.message });
     }
 });
