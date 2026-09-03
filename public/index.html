@@ -13,14 +13,16 @@
     <style>
         .fade-in { animation: fadeIn 0.25s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Memastikan teks nama produk turun ke bawah secara penuh dan tidak terpotong */
         .product-title {
-            display: block !important;
-            white-space: normal !important;
-            word-wrap: break-word !important;
-            overflow: visible !important;
-            height: auto !important;
-            max-height: none !important;
+            display: block;
+            white-space: normal;
+            word-break: break-word;
+            overflow: visible;
+            line-height: 1.3rem;
         }
+
         .modal-overlay { background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px); }
         .blinking { animation: blinker 1.5s linear infinite; }
         @keyframes blinker { 50% { opacity: 0.3; } }
@@ -102,7 +104,8 @@
 
                 <div class="md:col-span-7 lg:col-span-8 bg-white p-5 md:p-6 rounded-2xl border border-slate-200 shadow-sm mt-6 md:mt-0">
                     <label class="block text-sm md:text-base font-bold text-slate-800 mb-4">Pilih Nominal Produk</label>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" id="nominalOptions"></div>
+                    <!-- Menggunakan grid 1 kolom untuk memastikan kotak produk melebar leluasa ke bawah dan teks tidak terpotong -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="nominalOptions"></div>
                 </div>
 
                 <button type="submit" id="btnPreparePayMobile" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-600/20 text-sm mt-6 transition disabled:bg-slate-400 md:hidden">
@@ -134,7 +137,7 @@
                 <div class="p-6 text-sm md:text-base space-y-4">
                     <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-3">
                         <div class="flex justify-between"><span class="text-slate-500">Tujuan:</span><span id="confirmId" class="font-bold text-slate-800 text-right">-</span></div>
-                        <div class="flex justify-between"><span class="text-slate-500">Produk:</span><span id="confirmProduct" class="font-bold text-slate-800 text-right w-1/2 product-title">-</span></div>
+                        <div class="flex justify-between items-start"><span class="text-slate-500">Produk:</span><span id="confirmProduct" class="font-bold text-slate-800 text-right w-2/3 product-title">-</span></div>
                         <div class="flex justify-between items-center"><span class="text-slate-500">Total Harga:</span><span id="confirmPrice" class="font-bold text-blue-600 text-lg">-</span></div>
                     </div>
                     <p class="text-[10px] md:text-xs text-red-500 text-center font-medium">* Barang digital tidak dapat direfund jika ada kesalahan input ID/Nomor.</p>
@@ -190,7 +193,7 @@
             if(activeMenu) activeMenu.classList.add('bg-blue-50', 'border-blue-500');
 
             const container = document.getElementById('dynamicBrandContainer');
-            container.innerHTML = `<div class="col-span-full text-center text-sm text-slate-400 py-10"><i class="fas fa-spinner fa-spin mr-2"></i> Sinkronisasi ke Digiflazz...</div>`;
+            container.innerHTML = `<div class="col-span-full text-center text-sm text-slate-400 py-10"><i class="fas fa-spinner fa-spin mr-2"></i> Memuat layanan ${categoryName.toUpperCase()}...</div>`;
 
             try {
                 const res = await fetch(`/api/get-brands/${categoryName}`);
@@ -208,7 +211,7 @@
                         `;
                     }).join('');
                 } else {
-                    container.innerHTML = `<div class="col-span-full text-center text-sm text-red-500 py-10 font-bold">Tidak ada brand ditemukan.</div>`;
+                    container.innerHTML = `<div class="col-span-full text-center text-sm text-red-500 py-10 font-bold">Tidak ada produk aktif untuk kategori ini.</div>`;
                 }
             } catch (err) {
                 container.innerHTML = `<div class="col-span-full text-center text-sm text-red-500 py-10">Gagal memuat data.</div>`;
@@ -270,12 +273,12 @@
                 const products = await res.json();
                 if (res.ok && Array.isArray(products) && products.length > 0) {
                     container.innerHTML = products.map(p => `
-                        <label class="border border-slate-200 p-3 md:p-4 rounded-xl cursor-pointer hover:border-blue-600 hover:shadow-md flex flex-col bg-white transition min-h-[100px]" 
+                        <label class="border border-slate-200 p-4 rounded-xl cursor-pointer hover:border-blue-600 hover:shadow-md flex items-start gap-3 bg-white transition" 
                                onclick="currentProductName='${p.name.replace(/'/g, "")}'; currentProductCode='${p.sku}'; currentPrice=${p.price};">
-                            <input type="radio" name="nominal" required class="mb-2 shrink-0 w-4 h-4 text-blue-600">
-                            <div class="flex-grow flex flex-col justify-between">
+                            <input type="radio" name="nominal" required class="mt-1 shrink-0 w-4 h-4 text-blue-600">
+                            <div class="flex-grow">
                                 <span class="text-xs md:text-sm font-bold text-slate-800 product-title">${p.name}</span>
-                                <span class="text-xs md:text-sm text-blue-600 font-extrabold mt-3">Rp ${p.price.toLocaleString('id-ID')}</span>
+                                <span class="block text-xs md:text-sm text-blue-600 font-extrabold mt-1">Rp ${p.price.toLocaleString('id-ID')}</span>
                             </div>
                         </label>
                     `).join('');
