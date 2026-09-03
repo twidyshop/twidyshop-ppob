@@ -6,28 +6,17 @@
     <title>TWIDY SHOP - Pusat Top Up & PPOB Terlengkap</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://app.midtrans.com/snap/snap.js" data-client-key="CLIENT_KEY_KAMU"></script>
     <style>
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .fade-in { animation: fadeIn 0.25s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-        .product-title {
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: normal;
-            line-height: 1.25rem;
-            height: 2.5rem;
-        }
-        /* Modal Overlay */
-        .modal-overlay { background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px); }
+        .tab-content { display: none; }
+        .tab-content.active { display: grid; }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 font-sans pb-24 selection:bg-blue-600 selection:text-white" onload="selectCategory('pulsa')">
+<body class="bg-slate-50 text-slate-800 font-sans pb-24 selection:bg-blue-600 selection:text-white" onload="filterCategory('pulsa')">
 
     <header class="bg-blue-600 text-white sticky top-0 z-50 shadow-md">
         <div class="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
@@ -43,10 +32,11 @@
         </div>
     </header>
 
-    <main class="max-w-md mx-auto px-4 mt-4 relative">
+    <main class="max-w-md mx-auto px-4 mt-4">
         
         <!-- KATALOG UTAMA -->
         <div id="viewCatalog" class="fade-in block">
+            
             <div class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-5 text-white shadow-lg mb-5 relative overflow-hidden">
                 <div class="relative z-10">
                     <span class="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Resmi & Legal</span>
@@ -56,36 +46,105 @@
                 <i class="fas fa-bolt absolute -right-3 -bottom-4 text-7xl text-white/10"></i>
             </div>
 
-            <!-- Kategori Menu -->
+            <!-- Kategori Menu Atas -->
             <div class="grid grid-cols-4 gap-3 mb-6 text-center">
-                <div onclick="selectCategory('pulsa')" id="menu-pulsa" class="menu-cat bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition">
+                <div onclick="filterCategory('pulsa')" id="menu-pulsa" class="menu-cat bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition">
                     <div class="w-10 h-10 mx-auto rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mb-1.5"><i class="fas fa-mobile-screen-button"></i></div>
                     <span class="text-[10px] font-bold text-slate-700">Pulsa</span>
                 </div>
-                <div onclick="selectCategory('games')" id="menu-games" class="menu-cat bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition">
+                <div onclick="filterCategory('games')" id="menu-games" class="menu-cat bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition">
                     <div class="w-10 h-10 mx-auto rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center mb-1.5"><i class="fas fa-gamepad"></i></div>
                     <span class="text-[10px] font-bold text-slate-700">Games</span>
                 </div>
-                <div onclick="selectCategory('emoney')" id="menu-emoney" class="menu-cat bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition">
+                <div onclick="filterCategory('emoney')" id="menu-emoney" class="menu-cat bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition">
                     <div class="w-10 h-10 mx-auto rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center mb-1.5"><i class="fas fa-wallet"></i></div>
                     <span class="text-[10px] font-bold text-slate-700">E-Money</span>
                 </div>
-                <div onclick="selectCategory('pln')" id="menu-pln" class="menu-cat bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition">
+                <div onclick="filterCategory('pln')" id="menu-pln" class="menu-cat bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition">
                     <div class="w-10 h-10 mx-auto rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center mb-1.5"><i class="fas fa-lightbulb"></i></div>
                     <span class="text-[10px] font-bold text-slate-700">PLN</span>
                 </div>
             </div>
 
-            <!-- CONTAINER BRAND DINAMIS -->
-            <div id="dynamicBrandContainer" class="grid grid-cols-2 gap-3 mb-6">
-                <div class="col-span-2 text-center text-xs text-slate-400 py-10"><i class="fas fa-spinner fa-spin mr-2"></i> Memuat daftar layanan...</div>
+            <!-- TAB KONTEN PULSA -->
+            <div id="grid-pulsa" class="tab-content grid-cols-2 gap-3 mb-6">
+                <div onclick="openCheckout('TELKOMSEL', 'pulsa', 'bg-red-600', 'TS')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-red-600 text-white font-extrabold shadow-inner">TS</div>
+                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">TELKOMSEL</p><p class="text-[10px] text-slate-400">Pulsa Reguler</p></div>
+                </div>
+                <div onclick="openCheckout('INDOSAT', 'pulsa', 'bg-yellow-500', 'IN')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-yellow-500 text-white font-extrabold shadow-inner">IN</div>
+                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">INDOSAT</p><p class="text-[10px] text-slate-400">Pulsa Reguler</p></div>
+                </div>
+                <div onclick="openCheckout('AXIS', 'pulsa', 'bg-purple-600', 'AX')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-purple-600 text-white font-extrabold shadow-inner">AX</div>
+                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">AXIS</p><p class="text-[10px] text-slate-400">Pulsa Reguler</p></div>
+                </div>
+                <div onclick="openCheckout('SMARTFREN', 'pulsa', 'bg-pink-600', 'SM')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-pink-600 text-white font-extrabold shadow-inner">SM</div>
+                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">SMARTFREN</p><p class="text-[10px] text-slate-400">Pulsa Reguler</p></div>
+                </div>
+                <div onclick="openCheckout('TRI', 'pulsa', 'bg-slate-900', '3')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-slate-900 text-white font-extrabold shadow-inner">3</div>
+                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">TRI</p><p class="text-[10px] text-slate-400">Pulsa Reguler</p></div>
+                </div>
+                <div onclick="openCheckout('XL', 'pulsa', 'bg-blue-700', 'XL')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-blue-700 text-white font-extrabold shadow-inner">XL</div>
+                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">XL</p><p class="text-[10px] text-slate-400">Pulsa Reguler</p></div>
+                </div>
+                <div onclick="openCheckout('BY.U', 'pulsa', 'bg-blue-500', 'BY')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-blue-500 text-white font-extrabold shadow-inner">BY</div>
+                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">by.U</p><p class="text-[10px] text-slate-400">Pulsa Reguler</p></div>
+                </div>
+            </div>
+
+            <!-- TAB KONTEN GAMES -->
+            <div id="grid-games" class="tab-content grid-cols-2 gap-3 mb-6">
+                <div onclick="openCheckout('MOBILE LEGENDS', 'games', 'bg-indigo-900', 'ML')" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:border-blue-500 transition p-3 text-center">
+                    <div class="aspect-square rounded-lg bg-indigo-900 text-white font-black text-2xl flex items-center justify-center shadow-inner mb-2">ML</div>
+                    <p class="text-xs font-bold text-slate-700 truncate">MOBILE LEGENDS</p>
+                </div>
+                <div onclick="openCheckout('FREE FIRE', 'games', 'bg-orange-600', 'FF')" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:border-blue-500 transition p-3 text-center">
+                    <div class="aspect-square rounded-lg bg-orange-600 text-white font-black text-2xl flex items-center justify-center shadow-inner mb-2">FF</div>
+                    <p class="text-xs font-bold text-slate-700 truncate">FREE FIRE</p>
+                </div>
+            </div>
+
+            <!-- TAB KONTEN E-MONEY -->
+            <div id="grid-emoney" class="tab-content grid-cols-2 gap-3 mb-6">
+                <div onclick="openCheckout('GO PAY', 'emoney', 'bg-blue-500', 'GP')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-blue-500 text-white font-extrabold shadow-inner">GP</div>
+                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">GO PAY</p></div>
+                </div>
+                <div onclick="openCheckout('OVO', 'emoney', 'bg-purple-700', 'OV')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-purple-700 text-white font-extrabold shadow-inner">OV</div>
+                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">OVO</p></div>
+                </div>
+                <div onclick="openCheckout('DANA', 'emoney', 'bg-blue-400', 'DA')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-blue-400 text-white font-extrabold shadow-inner">DA</div>
+                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">DANA</p></div>
+                </div>
+                <div onclick="openCheckout('SHOPEE PAY', 'emoney', 'bg-orange-500', 'SP')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-orange-500 text-white font-extrabold shadow-inner">SP</div>
+                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">SHOPEE PAY</p></div>
+                </div>
+            </div>
+
+            <!-- TAB KONTEN PLN -->
+            <div id="grid-pln" class="tab-content grid-cols-1 gap-3 mb-6">
+                <div onclick="openCheckout('PLN', 'pln', 'bg-amber-500', 'PLN')" class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-lg shrink-0 flex items-center justify-center bg-amber-500 text-white font-black text-lg shadow-inner">PLN</div>
+                    <div class="overflow-hidden"><p class="text-sm font-bold text-slate-800">PLN</p><p class="text-xs text-slate-400 mt-0.5">Otomatis masuk 24 Jam</p></div>
+                </div>
             </div>
         </div>
 
         <!-- FORM CHECKOUT -->
         <div id="viewCheckout" class="hidden fade-in">
             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-4 flex items-center gap-3">
-                <div id="checkoutLogoContainer" class="w-12 h-12 rounded-lg flex items-center justify-center shrink-0 font-extrabold text-white text-xl shadow-inner">TW</div>
+                <div id="checkoutLogoContainer" class="w-12 h-12 rounded-lg bg-blue-600 flex items-center justify-center shrink-0">
+                    <i class="fas fa-cart-shopping text-white"></i>
+                </div>
                 <div>
                     <h2 id="checkoutTitle" class="font-bold text-slate-800 text-sm">Nama Produk</h2>
                     <p class="text-[10px] text-emerald-600 font-medium"><i class="fas fa-check-circle"></i> Proses Otomatis via API</p>
@@ -96,16 +155,16 @@
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-4">
                     <label id="inputLabelText" class="block text-xs font-bold text-slate-700 mb-2">Masukkan User ID / Nomor Tujuan</label>
                     <input type="text" id="targetId" required placeholder="Contoh: 08123456789" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-600">
-                    <p class="text-[9px] text-slate-400 mt-2">* Pastikan nomor/ID benar, kesalahan input bukan tanggung jawab sistem.</p>
                 </div>
 
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-6">
                     <label class="block text-xs font-bold text-slate-700 mb-2">Pilih Nominal Produk</label>
-                    <div class="grid grid-cols-2 gap-2 max-h-[350px] overflow-y-auto no-scrollbar" id="nominalOptions"></div>
+                    <div class="grid grid-cols-2 gap-2 max-h-[350px] overflow-y-auto no-scrollbar" id="nominalOptions">
+                    </div>
                 </div>
 
-                <button type="submit" id="btnPreparePay" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-600/20 text-xs transition disabled:bg-slate-400">
-                    Lanjut Konfirmasi
+                <button type="submit" id="btnPay" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-600/20 text-xs transition disabled:bg-slate-400">
+                    Lanjut Pembayaran (Midtrans)
                 </button>
             </form>
         </div>
@@ -117,89 +176,14 @@
                     <i class="fas fa-receipt"></i>
                 </div>
                 <h2 class="font-bold text-slate-800 text-sm mb-1">Cek Status Transaksi</h2>
-                <p class="text-[11px] text-slate-400 mb-4">Lacak pesanan dan lihat SN / Token PLN Anda di sini.</p>
+                <p class="text-[11px] text-slate-400 mb-4">Masukkan Nomor HP atau Order ID untuk mengecek status pesanan.</p>
                 
                 <div class="flex gap-2">
                     <input type="text" id="searchOrderId" placeholder="Masukkan Order ID / No HP" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-600">
-                    <button onclick="checkOrderStatus()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 rounded-lg text-xs font-bold shrink-0">Cari</button>
+                    <button onclick="checkOrderStatus()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 rounded-lg text-xs font-bold shrink-0">Cek</button>
                 </div>
             </div>
             <div id="statusResultContainer"></div>
-        </div>
-
-        <!-- VIEW INVOICE -->
-        <div id="viewInvoice" class="hidden fade-in">
-            <div id="invoiceCard" class="bg-white p-6 rounded-2xl border border-slate-200 shadow-md mb-4">
-                <div class="text-center pb-4 border-b border-dashed border-slate-200">
-                    <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-2 text-xl">
-                        <i class="fas fa-check-circle"></i>
-                    </div>
-                    <h2 class="text-base font-extrabold text-slate-800">Bukti Pesanan</h2>
-                    <p class="text-[10px] text-slate-400">Gunakan menu Cek Status untuk melihat update Token</p>
-                </div>
-
-                <div class="py-4 space-y-3 text-xs">
-                    <div class="flex justify-between">
-                        <span class="text-slate-400">Order ID</span>
-                        <span id="invOrderId" class="font-bold text-slate-700 font-mono">-</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-slate-400">Tujuan / ID</span>
-                        <span id="invTarget" class="font-bold text-blue-600">-</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-slate-400">Produk</span>
-                        <span id="invProduct" class="font-bold text-slate-700 text-right">-</span>
-                    </div>
-                    <div class="flex justify-between items-center py-2 border-y border-slate-100 bg-slate-50 px-2 rounded">
-                        <span class="text-slate-600 font-bold">SN / TOKEN PLN</span>
-                        <span id="invSn" class="font-mono font-extrabold text-blue-700 text-right">Menunggu Server...</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-slate-400">Total Bayar</span>
-                        <span id="invAmount" class="font-extrabold text-emerald-600">-</span>
-                    </div>
-                    <div class="flex justify-between items-center pt-2">
-                        <span class="text-slate-400">Status</span>
-                        <span id="invStatus" class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700">DIPROSES</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-2 mb-3">
-                <button onclick="downloadInvoiceImage()" class="bg-slate-800 hover:bg-slate-900 text-white py-3 rounded-xl font-bold text-xs transition shadow">
-                    <i class="fas fa-download mr-1"></i> Simpan
-                </button>
-                <a id="invWaBtn" href="#" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold text-xs text-center transition flex items-center justify-center shadow">
-                    <i class="fab fa-whatsapp mr-1 text-sm"></i> Bantuan
-                </a>
-            </div>
-
-            <button onclick="switchView('catalog')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-xs transition shadow-md">
-                Selesai & Kembali
-            </button>
-        </div>
-
-        <!-- POPUP KONFIRMASI PESANAN -->
-        <div id="modalConfirm" class="hidden fixed inset-0 z-[100] flex items-center justify-center px-4 modal-overlay fade-in">
-            <div class="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl">
-                <div class="bg-blue-600 p-4 text-center text-white">
-                    <h3 class="font-bold text-sm">Konfirmasi Pesanan</h3>
-                    <p class="text-[10px] text-blue-100 mt-1">Pastikan data di bawah ini sudah benar</p>
-                </div>
-                <div class="p-5 text-xs space-y-3">
-                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-2">
-                        <div class="flex justify-between"><span class="text-slate-500">Nomor / ID Tujuan:</span><span id="confirmId" class="font-bold text-slate-800">-</span></div>
-                        <div class="flex justify-between"><span class="text-slate-500">Produk:</span><span id="confirmProduct" class="font-bold text-slate-800 text-right">-</span></div>
-                        <div class="flex justify-between"><span class="text-slate-500">Total Harga:</span><span id="confirmPrice" class="font-bold text-blue-600">-</span></div>
-                    </div>
-                    <p class="text-[10px] text-red-500 text-center font-medium">* Barang yang sudah dibeli tidak dapat direfund jika salah ID.</p>
-                </div>
-                <div class="flex border-t border-slate-200">
-                    <button onclick="closeModal()" class="w-1/2 py-3.5 text-xs font-bold text-slate-500 hover:bg-slate-50 transition">Batal</button>
-                    <button id="btnExecutePay" class="w-1/2 py-3.5 text-xs font-bold text-blue-600 hover:bg-blue-50 transition border-l border-slate-200">Ya, Bayar Sekarang</button>
-                </div>
-            </div>
         </div>
     </main>
 
@@ -214,91 +198,60 @@
                 <i class="fas fa-receipt text-base"></i>
                 <span class="text-[9px] font-bold mt-0.5">Cek Status</span>
             </button>
+            <a href="https://wa.me/628970108026?text=Halo%20Admin%20Twidyshop,%20saya%20mau%20tanya%20terkait%20transaksi." target="_blank" class="flex flex-col items-center hover:text-blue-600 transition">
+                <i class="fas fa-headset text-base"></i>
+                <span class="text-[9px] font-bold mt-0.5">Bantuan</span>
+            </a>
         </div>
     </div>
 
     <script>
-        let currentProductName = '';
-        let currentProductCode = '';
-        let currentPrice = 0;
-        let currentTarget = '';
-        
-        // KAMUS WARNA UNTUK LOGO BRAND
-        const brandStyles = {
-            'TELKOMSEL': 'bg-red-600', 'INDOSAT': 'bg-yellow-500', 'AXIS': 'bg-purple-600',
-            'XL': 'bg-blue-700', 'TRI': 'bg-slate-800', 'SMARTFREN': 'bg-pink-600', 'BY.U': 'bg-blue-500',
-            'PLN': 'bg-amber-500', 'MOBILE LEGENDS': 'bg-indigo-900', 'FREE FIRE': 'bg-orange-600',
-            'PUBG MOBILE': 'bg-slate-900', 'GENSHIN IMPACT': 'bg-slate-700',
-            'DANA': 'bg-blue-400', 'OVO': 'bg-purple-700', 'GO PAY': 'bg-blue-500', 'SHOPEE PAY': 'bg-orange-500'
-        };
-
-        async function selectCategory(categoryName) {
+        function filterCategory(categoryName) {
             document.querySelectorAll('.menu-cat').forEach(el => el.classList.remove('bg-blue-50', 'border-blue-500'));
             const activeMenu = document.getElementById('menu-' + categoryName);
             if(activeMenu) activeMenu.classList.add('bg-blue-50', 'border-blue-500');
 
-            const container = document.getElementById('dynamicBrandContainer');
-            container.innerHTML = `<div class="col-span-2 text-center text-xs text-slate-400 py-10"><i class="fas fa-spinner fa-spin mr-2"></i> Sinkronisasi ke Digiflazz...</div>`;
-
-            try {
-                const res = await fetch(`/api/get-brands/${categoryName}`);
-                const brands = await res.json();
-
-                if(res.ok && Array.isArray(brands) && brands.length > 0) {
-                    container.innerHTML = brands.map(brand => {
-                        let initials = brand.substring(0, 2).toUpperCase();
-                        let bColor = brandStyles[brand.toUpperCase()] || 'bg-slate-700';
-                        return `
-                            <div onclick="openCheckout('${brand}', '${categoryName}', '${bColor}')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3 transition">
-                                <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center text-white font-extrabold shadow-inner text-xs ${bColor}">${initials}</div>
-                                <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800 truncate">${brand}</p><p class="text-[9px] text-slate-400">Otomatis 24 Jam</p></div>
-                            </div>
-                        `;
-                    }).join('');
-                } else {
-                    container.innerHTML = `<div class="col-span-2 text-center text-xs text-red-500 py-6 font-bold">Belum ada produk aktif di Digiflazz.</div>`;
-                }
-            } catch (err) {
-                container.innerHTML = `<div class="col-span-2 text-center text-xs text-red-500 py-6">Gagal memuat data brand.</div>`;
-            }
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            const activeGrid = document.getElementById('grid-' + categoryName);
+            if(activeGrid) activeGrid.classList.add('active');
         }
 
         function switchView(view) {
-            ['viewCatalog', 'viewCheckout', 'viewStatus', 'viewInvoice', 'btnBack'].forEach(id => {
-                document.getElementById(id).classList.add('hidden');
-            });
+            document.getElementById('viewCatalog').classList.add('hidden');
+            document.getElementById('viewCheckout').classList.add('hidden');
+            document.getElementById('viewStatus').classList.add('hidden');
+            
             document.getElementById('nav-catalog').className = "flex flex-col items-center hover:text-blue-600 transition text-slate-400";
             document.getElementById('nav-status').className = "flex flex-col items-center hover:text-blue-600 transition text-slate-400";
 
             if(view === 'catalog') {
                 document.getElementById('viewCatalog').classList.remove('hidden');
+                document.getElementById('btnBack').classList.add('hidden');
                 document.getElementById('nav-catalog').className = "flex flex-col items-center text-blue-600 transition";
             } else if(view === 'status') {
                 document.getElementById('viewStatus').classList.remove('hidden');
                 document.getElementById('btnBack').classList.remove('hidden');
                 document.getElementById('nav-status').className = "flex flex-col items-center text-blue-600 transition";
-            } else if(view === 'invoice') {
-                document.getElementById('viewInvoice').classList.remove('hidden');
-                document.getElementById('btnBack').classList.remove('hidden');
-            } else if(view === 'checkout') {
-                document.getElementById('viewCheckout').classList.remove('hidden');
-                document.getElementById('btnBack').classList.remove('hidden');
             }
             window.scrollTo(0,0);
         }
 
-        async function openCheckout(brandName, categoryType, colorClass) {
-            switchView('checkout');
+        async function openCheckout(brandName, categoryType, colorClass, initials) {
+            document.getElementById('viewCatalog').classList.add('hidden');
+            document.getElementById('viewCheckout').classList.remove('hidden');
+            document.getElementById('viewStatus').classList.add('hidden');
+            document.getElementById('btnBack').classList.remove('hidden');
+            
             document.getElementById('checkoutTitle').innerText = brandName;
             
-            const logo = document.getElementById('checkoutLogoContainer');
-            logo.className = `w-12 h-12 rounded-lg flex items-center justify-center shrink-0 font-extrabold text-white text-xl shadow-inner ${colorClass}`;
-            logo.innerText = brandName.substring(0, 2).toUpperCase();
+            const logoContainer = document.getElementById('checkoutLogoContainer');
+            logoContainer.className = `w-12 h-12 rounded-lg flex items-center justify-center shrink-0 shadow-inner text-white font-extrabold text-xl ${colorClass}`;
+            logoContainer.innerHTML = initials;
             
             const label = document.getElementById('inputLabelText');
             const targetInput = document.getElementById('targetId');
             if(categoryType === 'games') {
-                label.innerText = "Masukkan User ID (+ Zone ID)";
+                label.innerText = "Masukkan User ID / Zone ID";
                 targetInput.placeholder = "Contoh: 12345678 (1234)";
             } else if(categoryType === 'pln') {
                 label.innerText = "Masukkan Nomor Meter / ID Pelanggan PLN";
@@ -309,9 +262,11 @@
             }
 
             const container = document.getElementById('nominalOptions');
-            const btnPay = document.getElementById('btnPreparePay');
+            const btnPay = document.getElementById('btnPay');
             btnPay.disabled = true;
-            container.innerHTML = `<div class="col-span-2 text-center text-xs text-slate-500 py-6"><i class="fas fa-spinner fa-spin mr-2 text-lg"></i> Mengambil produk...</div>`;
+
+            container.innerHTML = `<div class="col-span-2 text-center text-xs text-slate-500 py-6"><i class="fas fa-spinner fa-spin mr-2 text-lg"></i> Mengambil data dari pusat...</div>`;
+            window.scrollTo(0,0);
 
             try {
                 const res = await fetch('/api/get-products', {
@@ -321,131 +276,83 @@
                 });
                 
                 const products = await res.json();
+
                 if (res.ok && Array.isArray(products) && products.length > 0) {
                     container.innerHTML = products.map(p => `
-                        <label class="border border-slate-200 p-2.5 rounded-lg cursor-pointer hover:border-blue-600 flex flex-col justify-between" 
-                               onclick="currentProductName='${p.name.replace(/'/g, "")}'; currentProductCode='${p.sku}'; currentPrice=${p.price};">
-                            <input type="radio" name="nominal" required class="mb-1">
-                            <span class="text-[11px] font-bold text-slate-800 product-title" title="${p.name}">${p.name}</span>
-                            <span class="text-[10px] text-blue-600 font-bold mt-1">Rp ${p.price.toLocaleString('id-ID')}</span>
+                        <label class="border border-slate-200 p-2.5 rounded-lg cursor-pointer hover:border-blue-600 flex flex-col">
+                            <input type="radio" name="nominal" value="${p.sku}" data-price="${p.price}" required class="mb-1">
+                            <span class="text-[11px] font-bold text-slate-800 mt-1 truncate" title="${p.name}">${p.name}</span>
+                            <span class="text-[10px] text-blue-600">Rp ${p.price.toLocaleString('id-ID')}</span>
                         </label>
                     `).join('');
                     btnPay.disabled = false;
                 } else {
-                    container.innerHTML = `<div class="col-span-2 text-center text-xs text-red-500 font-bold py-6">Produk kosong.</div>`;
+                    container.innerHTML = `<div class="col-span-2 text-center text-xs text-red-500 font-bold py-6">Produk sedang kosong / gangguan.</div>`;
                 }
             } catch (e) {
-                container.innerHTML = `<div class="col-span-2 text-center text-xs text-red-500 py-6">Gagal memuat.</div>`;
+                container.innerHTML = `<div class="col-span-2 text-center text-xs text-red-500 py-6">Gagal memuat dari server.</div>`;
             }
         }
 
-        // --- SISTEM MODAL KONFIRMASI (PENGGANTI CEK NICKNAME) ---
-        document.getElementById('formCheckout').addEventListener('submit', function(e) {
-            e.preventDefault();
-            currentTarget = document.getElementById('targetId').value.trim();
-            const selected = document.querySelector('input[name="nominal"]:checked');
-            
-            if (!selected) { alert("Pilih nominal produk!"); return; }
-
-            document.getElementById('confirmId').innerText = currentTarget;
-            document.getElementById('confirmProduct').innerText = currentProductName;
-            document.getElementById('confirmPrice').innerText = 'Rp ' + currentPrice.toLocaleString('id-ID');
-            
-            document.getElementById('modalConfirm').classList.remove('hidden');
-        });
-
-        function closeModal() {
-            document.getElementById('modalConfirm').classList.add('hidden');
+        function checkOrderStatus() {
+            const query = document.getElementById('searchOrderId').value;
+            const container = document.getElementById('statusResultContainer');
+            if(!query) {
+                alert("Masukkan Order ID atau Nomor HP terlebih dahulu!");
+                return;
+            }
+            container.innerHTML = `<div class="bg-white p-4 rounded-xl border border-slate-200 text-center text-xs text-slate-500">Mencari data transaksi...</div>`;
+            setTimeout(() => {
+                container.innerHTML = `<div class="bg-white p-4 rounded-xl border border-slate-200 text-center text-xs text-slate-600">Belum ada riwayat transaksi untuk "${query}" di sesi browser ini. Silakan hubungi Bantuan WhatsApp jika ada kendala.</div>`;
+            }, 500);
         }
 
-        document.getElementById('btnExecutePay').addEventListener('click', async function() {
-            closeModal();
-            const btnPay = document.getElementById('btnPreparePay');
+        document.getElementById('formCheckout').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const targetId = document.getElementById('targetId').value;
+            const selectedNomor = document.querySelector('input[name="nominal"]:checked');
+            const btnPay = document.getElementById('btnPay');
+
+            if (!selectedNomor) {
+                alert("Pilih nominal produk terlebih dahulu!");
+                return;
+            }
+
+            const productCode = selectedNomor.value;
+            const price = selectedNomor.getAttribute('data-price');
             const originalText = btnPay.innerHTML;
-            btnPay.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Memproses...';
+
+            btnPay.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Menyiapkan Pembayaran...';
             btnPay.disabled = true;
 
             try {
                 const response = await fetch('/api/create-transaction', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ targetId: currentTarget, productCode: currentProductCode, price: currentPrice, productName: currentProductName }) 
+                    body: JSON.stringify({ targetId, productCode, price }) 
                 });
 
                 const data = await response.json();
+
                 if (response.ok && data.token) {
                     window.snap.pay(data.token, {
-                        onSuccess: function(r){ showInvoice(data.order_id); },
-                        onPending: function(r){ showInvoice(data.order_id); },
-                        onError: function(r){ alert("Pembayaran Gagal!"); },
-                        onClose: function(){}
+                        onSuccess: function(result){ alert("Pembayaran Berhasil! Pesanan diproses otomatis."); console.log(result);},
+                        onPending: function(result){ alert("Menunggu pembayaran Anda."); console.log(result);},
+                        onError: function(result){ alert("Pembayaran Gagal!"); console.log(result);},
+                        onClose: function(){ alert("Popup pembayaran ditutup."); }
                     });
                 } else {
-                    alert("Error: " + (data.message || "Gagal memproses transaksi"));
+                    alert("Error Midtrans: " + JSON.stringify(data.error || data.message));
                 }
             } catch (error) {
-                alert("Gangguan koneksi ke server.");
+                console.error(error);
+                alert("Gagal terhubung ke server backend Render.");
             } finally {
                 btnPay.innerHTML = originalText;
                 btnPay.disabled = false;
             }
         });
-
-        function showInvoice(orderId) {
-            document.getElementById('invOrderId').innerText = orderId;
-            document.getElementById('invTarget').innerText = currentTarget;
-            document.getElementById('invProduct').innerText = currentProductName;
-            document.getElementById('invAmount').innerText = 'Rp ' + currentPrice.toLocaleString('id-ID');
-            document.getElementById('invSn').innerText = 'Silakan Cek Status';
-            
-            const waText = encodeURIComponent(`Halo Admin, orderanku dgn ID: ${orderId} sukses terbayar. Boleh bantu pantau?`);
-            document.getElementById('invWaBtn').href = `https://wa.me/628970108026?text=${waText}`;
-            switchView('invoice');
-        }
-
-        async function checkOrderStatus() {
-            const query = document.getElementById('searchOrderId').value.trim();
-            const container = document.getElementById('statusResultContainer');
-            if(!query) return;
-            
-            container.innerHTML = `<div class="bg-white p-4 rounded-xl text-center text-xs text-slate-500"><i class="fas fa-spinner fa-spin"></i> Sedang mencari...</div>`;
-            
-            try {
-                const res = await fetch(`/api/check-status/${encodeURIComponent(query)}`);
-                const result = await res.json();
-
-                if(res.ok && result.success && result.data.length > 0) {
-                    container.innerHTML = result.data.map(trx => `
-                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-3 text-xs space-y-2">
-                            <div class="flex justify-between border-b pb-2">
-                                <span class="font-mono font-bold text-slate-700">${trx.order_id}</span>
-                                <span class="px-2 py-0.5 rounded text-[9px] font-bold ${trx.status.includes('SUCCESS') ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">${trx.status}</span>
-                            </div>
-                            <div class="flex justify-between"><span class="text-slate-400">Tujuan:</span><span class="font-bold">${trx.target_id}</span></div>
-                            <div class="flex justify-between"><span class="text-slate-400">Produk:</span><span class="font-bold text-right">${trx.product_name}</span></div>
-                            <div class="flex justify-between items-center bg-slate-50 p-2 rounded border border-slate-100">
-                                <span class="text-slate-600 font-bold">SN / TOKEN</span>
-                                <span class="font-mono font-extrabold text-blue-600">${trx.sn}</span>
-                            </div>
-                        </div>
-                    `).join('');
-                } else {
-                    container.innerHTML = `<div class="bg-white p-4 rounded-xl text-center text-xs text-slate-600">Riwayat tidak ditemukan.</div>`;
-                }
-            } catch (err) {
-                container.innerHTML = `<div class="bg-white p-4 rounded-xl text-center text-xs text-red-500">Gagal terhubung ke server.</div>`;
-            }
-        }
-
-        function downloadInvoiceImage() {
-            const invoiceElement = document.getElementById('invoiceCard');
-            html2canvas(invoiceElement, { scale: 2 }).then(canvas => {
-                const link = document.createElement('a');
-                link.download = `Nota-Twidyshop-${Date.now()}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-            });
-        }
     </script>
 </body>
 </html>
