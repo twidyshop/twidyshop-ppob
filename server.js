@@ -13,6 +13,7 @@ let cachedProducts = null;
 let cacheTimestamp = 0;
 const CACHE_DURATION = 5 * 60 * 1000; 
 
+// 1. Endpoint Ambil Produk Digiflazz
 app.post('/api/get-products', async (req, res) => {
     const { brand, category } = req.body; 
     const username = process.env.DIGIFLAZZ_USERNAME;
@@ -48,16 +49,20 @@ app.post('/api/get-products', async (req, res) => {
         }
 
         let targetBrand = (brand || "").trim().toUpperCase();
+        let brandAliases = [targetBrand];
+        if (targetBrand === 'TELKOMSEL') brandAliases.push('TSEL');
+        if (targetBrand === 'INDOSAT') brandAliases.push('ISAT');
+        if (targetBrand === 'TRI') brandAliases.push('3');
 
         let filtered = data.filter(item => {
             let itemBrand = (item.brand || "").trim().toUpperCase();
             let itemName = (item.product_name || "").toUpperCase();
             
-            let isBrandMatch = itemBrand.includes(targetBrand) || itemName.includes(targetBrand);
+            let isBrandMatch = brandAliases.some(alias => itemBrand.includes(alias) || itemName.includes(alias));
             if (!isBrandMatch) return false;
 
             if (category === 'pulsa') {
-                if (itemName.includes('DATA') || itemName.includes('INTERNET') || itemName.includes('VOUCHER') || itemName.includes('PAKET')) {
+                if (itemName.includes('VOUCHER') || itemName.includes('WIFI')) {
                     return false;
                 }
             }
@@ -79,6 +84,67 @@ app.post('/api/get-products', async (req, res) => {
 
         return res.status(200).json(products);
         
+    } catch (error) {
+        return res.status(500).json({ message: 'Server error: ' + error.message });
+    }
+});
+
+// 2. Endpoint Buat Transaksi Midtrans Snap Token
+app.post('/api/create-transaction', async (req, res) => {
+    try {
+        const { targetId, productCode, price } = req.body;
+
+        if (!targetId || !productCode || !price) {
+            return res.status(400).json({ message: 'Target ID, Produk, dan Harga wajib diisi!' });
+        }
+
+        const orderId = 'TWIDY-' + Date.now();
+        const amount = parseInt(price);
+
+        const midtransServerKey = process.env.MIDTRANS_SERVER_KEY;
+        if (!midtransServerKey) {
+            return res.status(500).json({ message: 'MIDTRANS_SERVER_KEY belum diset di Render!' });
+        }
+
+        const authString = Buffer.from(midtransServerKey + ':').toString('base64');
+
+        const midtransResponse = await fetch('https://app.midtrans.com/snap/v1/transactions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Authorization': `Basic ${authString}`
+            },
+            body: JSON.stringify({
+                transaction_details: {
+                    order_id: orderId,
+                    gross_amount: amount
+                },
+                customer_details: {
+                    first_name: "Customer",
+                    last_name: targetId 
+                },
+                item_details: [{
+                    id: productCode,
+                    price: amount,
+                    quantity: 1,
+                    name: `Top Up ${productCode}`
+                }]
+            })
+        });
+
+        const midtransData = await midtransResponse.json();
+
+        if (!midtransResponse.ok) {
+            return res.status(400).json({ message: 'Gagal membuat transaksi Midtrans', error: midtransData });
+        }
+
+        return res.status(200).json({
+            token: midtransData.token,
+            redirect_url: midtransData.redirect_url,
+            order_id: orderId
+        });
+
     } catch (error) {
         return res.status(500).json({ message: 'Server error: ' + error.message });
     }
