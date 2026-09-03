@@ -9,7 +9,6 @@ app.use(express.json());
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// CACHE 5 MENIT (Aman dari banned/rate limit Digiflazz)
 let cachedProducts = null;
 let cacheTimestamp = 0;
 const CACHE_DURATION = 5 * 60 * 1000; 
@@ -30,6 +29,7 @@ function saveDB() {
 
 async function fetchDigiflazzProducts(username, apiKey) {
     const now = Date.now();
+    // Jika cache masih ada dan belum 5 menit, pakai cache. Jika sudah, ambil data baru!
     if (cachedProducts && (now - cacheTimestamp < CACHE_DURATION)) {
         return cachedProducts;
     }
@@ -43,13 +43,13 @@ async function fetchDigiflazzProducts(username, apiKey) {
     const raw = await res.json();
     if (raw.data && Array.isArray(raw.data)) {
         cachedProducts = raw.data;
-        cacheTimestamp = now;
+        cacheTimestamp = now; // Perbarui timestamp cache
         return cachedProducts;
     }
     return cachedProducts || [];
 }
 
-// 1. Endpoint Ambil Brand Universal (Tidak bakal kosong melompong)
+// 1. Endpoint Ambil Brand dengan Filter Kategori Ketat & Bersih
 app.get('/api/get-brands/:category', async (req, res) => {
     const category = req.params.category.toLowerCase();
     const username = process.env.DIGIFLAZZ_USERNAME;
@@ -60,32 +60,26 @@ app.get('/api/get-brands/:category', async (req, res) => {
     try {
         const data = await fetchDigiflazzProducts(username, apiKey);
         
-        // Filter longgar agar produk pasti masuk
         let filtered = data.filter(item => {
             if (item.buyer_product_status === false || item.buyer_product_status === 0 || item.buyer_product_status === '0') return false;
             
             let cat = (item.category || "").toLowerCase();
+            let brand = (item.brand || "").toLowerCase();
             let name = (item.product_name || "").toLowerCase();
 
             if (category === 'games') {
-                return cat.includes('game') || name.includes('dm') || name.includes('uc') || name.includes('diamond');
+                return cat.includes('game') || brand.includes('ml') || brand.includes('ff') || brand.includes('pubg') || brand.includes('genshin') || name.includes('diamond') || name.includes('uc') || name.includes('valorant');
             } else if (category === 'emoney') {
-                // Mencakup semua e-wallet tanpa terkecuali
-                return cat.includes('money') || cat.includes('wallet') || name.includes('gopay') || name.includes('ovo') || name.includes('dana') || name.includes('shopeepay') || name.includes('linkaja');
+                return cat.includes('e-money') || cat.includes('wallet') || brand.includes('dana') || brand.includes('ovo') || brand.includes('gopay') || brand.includes('shopee') || brand.includes('linkaja') || name.includes('gopay') || name.includes('ovo') || name.includes('dana') || name.includes('shopeepay');
             } else if (category === 'pln') {
-                return cat.includes('pln') || name.includes('token');
+                return cat.includes('pln') || brand.includes('pln') || name.includes('token');
             } else if (category === 'pulsa') {
-                return cat.includes('pulsa') && !name.includes('voucher');
+                return (cat.includes('pulsa') || brand.includes('telkomsel') || brand.includes('indosat') || brand.includes('xl') || brand.includes('axis') || brand.includes('tri') || brand.includes('smartfren') || brand.includes('by.u')) && !name.includes('voucher') && !name.includes('wifi') && !name.includes('paket');
             }
-            return true;
+            return false;
         });
 
-        // Jaga-jaga jika kategori spesifik kosong, fallback tampilkan semua brand aktif agar tidak error "Tidak ada produk"
-        if (filtered.length === 0) {
-            filtered = data.filter(item => item.buyer_product_status !== false && item.buyer_product_status !== 0);
-        }
-
-        let brandsSet = [...new Set(filtered.map(i => (i.brand || "PRODUK").toUpperCase()))].sort();
+        let brandsSet = [...new Set(filtered.map(i => (i.brand || "").toUpperCase()))].filter(b => b !== "").sort();
         return res.status(200).json(brandsSet);
     } catch (error) {
         return res.status(500).json({ message: 'Server error: ' + error.message });
