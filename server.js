@@ -46,8 +46,9 @@ async function fetchDigiflazzProducts(username, apiKey) {
     return [];
 }
 
-// 1. Endpoint Ambil SEMUA Brand Aktif Tanpa Terkecuali (Universal)
+// 1. Endpoint Ambil Brand Sesuai Kategori Pilihan
 app.get('/api/get-brands/:category', async (req, res) => {
+    const category = req.params.category.toLowerCase();
     const username = process.env.DIGIFLAZZ_USERNAME;
     const apiKey = process.env.DIGIFLAZZ_API_KEY;
 
@@ -56,21 +57,33 @@ app.get('/api/get-brands/:category', async (req, res) => {
     try {
         const data = await fetchDigiflazzProducts(username, apiKey);
         
-        // Ambil semua produk yang aktif saja dari akun kamu
-        let active = data.filter(item => {
+        let filtered = data.filter(item => {
             if (item.buyer_product_status === false || item.buyer_product_status === 0 || item.buyer_product_status === '0') return false;
-            return true;
+            
+            let cat = (item.category || "").toLowerCase();
+            let brand = (item.brand || "").toLowerCase();
+            let name = (item.product_name || "").toLowerCase();
+
+            if (category === 'games') {
+                return cat.includes('game') || brand.includes('ml') || brand.includes('ff') || brand.includes('pubg') || brand.includes('genshin') || name.includes('diamond') || name.includes('uc');
+            } else if (category === 'emoney') {
+                return cat.includes('e-money') || cat.includes('wallet') || brand.includes('dana') || brand.includes('ovo') || brand.includes('gopay') || brand.includes('shopee') || brand.includes('linkaja') || name.includes('gopay') || name.includes('ovo') || name.includes('dana') || name.includes('shopeepay');
+            } else if (category === 'pln') {
+                return cat.includes('pln') || brand.includes('pln') || name.includes('token');
+            } else if (category === 'pulsa') {
+                return (cat.includes('pulsa') || cat.includes('xl') || cat.includes('telkomsel') || cat.includes('indosat') || cat.includes('tri') || cat.includes('axis') || cat.includes('smartfren')) && !name.includes('voucher') && !name.includes('wifi') && !name.includes('paket');
+            }
+            return false;
         });
 
-        // Kumpulkan seluruh nama brand unik yang ada di akun Digiflazz kamu
-        let brandsSet = [...new Set(active.map(i => (i.brand || "LAINNYA").toUpperCase()))].sort();
+        let brandsSet = [...new Set(filtered.map(i => (i.brand || "").toUpperCase()))].filter(b => b !== "").sort();
         return res.status(200).json(brandsSet);
     } catch (error) {
         return res.status(500).json({ message: 'Server error: ' + error.message });
     }
 });
 
-// 2. Endpoint Ambil Produk Berdasarkan Brand yang Dipilih
+// 2. Endpoint Ambil Produk Berdasarkan Brand
 app.post('/api/get-products', async (req, res) => {
     const { brand } = req.body; 
     const username = process.env.DIGIFLAZZ_USERNAME;
