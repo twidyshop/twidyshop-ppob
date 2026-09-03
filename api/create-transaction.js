@@ -17,15 +17,18 @@ export default async function handler(req, res) {
     }
 
     try {
-        // Sekarang kita ambil data productCode dan price (harga dinamis)
         const { targetId, productCode, price } = req.body;
 
         if (!targetId || !productCode || !price) {
             return res.status(400).json({ message: 'Target ID, Produk, dan Harga wajib diisi!' });
         }
 
-        const orderId = 'TWIDY-' + Date.now();
-        const amount = parseInt(price); // Harga dinamis sesuai Digiflazz + Keuntungan lu
+        // Format Order ID diselipkan productCode dan targetId agar aman dibaca webhook
+        // Contoh: TWIDY-SKU_PRODUK-NOMOR_TUJUAN-TIMESTAMP
+        const cleanSku = productCode.replace(/[^a-zA-Z0-9-_]/g, '_');
+        const cleanTarget = targetId.replace(/[^a-zA-Z0-9]/g, '');
+        const orderId = `TWIDY-${cleanSku}-${cleanTarget}-${Date.now()}`;
+        const amount = parseInt(price);
 
         const midtransServerKey = process.env.MIDTRANS_SERVER_KEY;
         if (!midtransServerKey) {
@@ -48,7 +51,7 @@ export default async function handler(req, res) {
                 },
                 customer_details: {
                     first_name: "Customer",
-                    last_name: targetId 
+                    phone: targetId
                 },
                 item_details: [{
                     id: productCode,
