@@ -156,23 +156,47 @@ app.post('/api/create-transaction', async (req, res) => {
     }
 });
 
-// 3. Endpoint Webhook Midtrans (Otomatis Eksekusi ke Digiflazz)
+// 3. Endpoint Webhook Midtrans (Diperbaiki parsing nomor HP & Item ID-nya)
+app.get('/api/webhook', (req, res) => {
+    return res.status(200).json({ status: "OK", message: "Webhook endpoint is active." });
+});
+
 app.post('/api/webhook', async (req, res) => {
     try {
         const notification = req.body;
+        
+        // Kirim response OK langsung jika hanya test ping
+        if (!notification || !notification.transaction_status) {
+            return res.status(200).json({ status: "OK", message: "Webhook ping received." });
+        }
+
         const transactionStatus = notification.transaction_status;
         const fraudStatus = notification.fraud_status;
 
         if (transactionStatus === 'settlement' || (transactionStatus === 'capture' && fraudStatus === 'accept')) {
             const orderId = notification.order_id;
-            const targetId = notification.customer_last_name; 
-            const buyerSkuCode = notification.item_details && notification.item_details[0] ? notification.item_details[0].id : '';
+            
+            // Ambil nomor HP dari customer_details.full_name atau last_name
+            let targetId = '';
+            if (notification.customer_details) {
+                const fullName = notification.customer_details.full_name || '';
+                const parts = fullName.split(' ');
+                targetId = parts.length > 1 ? parts[parts.length - 1] : fullName;
+                if (!targetId) targetId = notification.customer_details.last_name || '';
+            }
+
+            // Ambil SKU produk dari item_details
+            let buyerSkuCode = '';
+            if (notification.item_details && notification.item_details.length > 0) {
+                buyerSkuCode = notification.item_details[0].id;
+            }
 
             const username = process.env.DIGIFLAZZ_USERNAME;
             const apiKey = process.env.DIGIFLAZZ_API_KEY;
 
             if (!username || !apiKey || !buyerSkuCode || !targetId) {
-                return res.status(500).json({ message: 'Data webhook / kredensial tidak lengkap' });
+                console.error("Webhook Error: Kredensial atau data transaksi tidak lengkap", { buyerSkuCode, targetId });
+                return res.status(200).json({ message: 'Data webhook tidak lengkap tapi diterima' });
             }
 
             const refId = orderId;
@@ -201,7 +225,8 @@ app.post('/api/webhook', async (req, res) => {
         return res.status(200).json({ message: "Notification received but not settlement yet." });
 
     } catch (error) {
-        return res.status(500).json({ message: 'Webhook error: ' + error.message });
+        console.error("Webhook Exception:", error);
+        return res.status(200).json({ message: 'Webhook error handled: ' + error.message });
     }
 });
 
