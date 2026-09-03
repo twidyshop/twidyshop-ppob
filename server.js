@@ -2,6 +2,7 @@ const express = require('express');
 const crypto = require('crypto');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs'); // Tambahan untuk file system (Database JSON)
 
 const app = express();
 app.use(express.json());
@@ -13,7 +14,32 @@ let cachedProducts = null;
 let cacheTimestamp = 0;
 const CACHE_DURATION = 5 * 60 * 1000; 
 
-const transactionDB = {};
+// --- SISTEM DATABASE PERMANEN (MENCEGAH HILANG SAAT DEPLOY) ---
+const DB_FILE = path.join(__dirname, 'database.json');
+let transactionDB = {};
+
+// Fungsi muat database saat server nyala
+function loadDB() {
+    if (fs.existsSync(DB_FILE)) {
+        try {
+            const data = fs.readFileSync(DB_FILE, 'utf8');
+            transactionDB = JSON.parse(data);
+            console.log("Database riwayat berhasil dimuat:", Object.keys(transactionDB).length, "transaksi.");
+        } catch (err) { console.error("Gagal membaca database.json", err); }
+    } else {
+        // Buat file baru jika belum ada
+        fs.writeFileSync(DB_FILE, JSON.stringify({}));
+    }
+}
+loadDB(); // Panggil saat server start
+
+// Fungsi simpan otomatis setiap ada perubahan transaksi
+function saveDB() {
+    try {
+        fs.writeFileSync(DB_FILE, JSON.stringify(transactionDB, null, 2));
+    } catch (err) { console.error("Gagal menyimpan ke database.json", err); }
+}
+// ----------------------------------------------------------------
 
 // Helper Ambil Data Pricelist Digiflazz
 async function fetchDigiflazzProducts(username, apiKey) {
@@ -36,28 +62,26 @@ async function fetchDigiflazzProducts(username, apiKey) {
     return [];
 }
 
-// 1. Endpoint Ambil Daftar Brand / Game Otomatis dari Digiflazz
+// 1. Endpoint Ambil Daftar Brand (Filter Diperbaiki)
 app.get('/api/get-brands/:category', async (req, res) => {
     const category = req.params.category.toLowerCase();
     const username = process.env.DIGIFLAZZ_USERNAME;
     const apiKey = process.env.DIGIFLAZZ_API_KEY;
 
-    if (!username || !apiKey) {
-        return res.status(500).json({ message: 'API Key Digiflazz belum diatur' });
-    }
+    if (!username || !apiKey) return res.status(500).json({ message: 'API Key Digiflazz belum diatur' });
 
     try {
         const data = await fetchDigiflazzProducts(username, apiKey);
         let filtered = data.filter(item => {
             if (item.buyer_product_status === false || item.buyer_product_status === 0 || item.buyer_product_status === '0') return false;
             let cat = (item.category || "").toLowerCase();
-            let brand = (item.brand || "").toLowerCase();
+            let brand = (item.brand || "").toLowerCase().replace(/\s/g, ''); // Hapus spasi untuk pencarian luwes
             let name = (item.product_name || "").toLowerCase();
 
             if (category === 'games') {
-                return cat.includes('games') || brand.includes('ml') || brand.includes('free fire') || brand.includes('pubg') || brand.includes('genshin') || name.includes('diamond') || name.includes('uc ');
+                return cat.includes('games') || brand.includes('ml') || brand.includes('freefire') || brand.includes('pubg') || brand.includes('genshin') || name.includes('diamond');
             } else if (category === 'emoney') {
-                return cat.includes('e-money') || brand.includes('dana') || brand.includes('ovo') || brand.includes('gopay') || brand.includes('shopeepay');
+                return cat.includes('e-money') || brand.includes('dana') || brand.includes('ovo') || brand.includes('gopay') || brand.includes('shopeepay') || brand.includes('linkaja');
             } else if (category === 'pln') {
                 return cat.includes('pln') || brand.includes('pln');
             } else if (category === 'pulsa') {
@@ -66,37 +90,44 @@ app.get('/api/get-brands/:category', async (req, res) => {
             return false;
         });
 
-        // Ambil daftar brand unik secara otomatis
-        let brandsSet = [...new Set(filtered.map(i => i.brand))].sort();
+        // Ambil daftar brand unik, dan rapikan namanya
+        let brandsSet = [...new Set(filtered.map(i => {
+            // Standarisasi nama brand agar tidak ganda
+            let b = i.brand.toUpperCase();
+            if(b.includes('GO PAY') || b.includes('GOPAY')) return 'GO PAY';
+            if(b.includes('SHOPEE')) return 'SHOPEE PAY';
+            return b;
+        }))].sort();
+        
         return res.status(200).json(brandsSet);
     } catch (error) {
         return res.status(500).json({ message: 'Server error: ' + error.message });
     }
 });
 
-// 2. Endpoint Ambil Produk Berdasarkan Brand
+// 2. Endpoint Ambil Produk Berdasarkan Brand (Filter Super Luwes)
 app.post('/api/get-products', async (req, res) => {
     const { brand, category } = req.body; 
     const username = process.env.DIGIFLAZZ_USERNAME;
     const apiKey = process.env.DIGIFLAZZ_API_KEY;
 
-    if (!username || !apiKey) {
-        return res.status(500).json({ message: 'API Key Digiflazz belum diatur' });
-    }
+    if (!username || !apiKey) return res.status(500).json({ message: 'API Key Digiflazz belum diatur' });
 
     try {
         const data = await fetchDigiflazzProducts(username, apiKey);
-        let targetBrand = (brand || "").trim().toUpperCase();
+        let targetBrandClean = (brand || "").trim().toUpperCase().replace(/\s/g, ''); // Cth: 'GOPAY'
 
         let filtered = data.filter(item => {
-            let itemBrand = (item.brand || "").trim().toUpperCase();
+            if (item.buyer_product_status === false || item.buyer_product_status === 0 || item.buyer_product_status === '0') return false;
+            
+            let itemBrandClean = (item.brand || "").trim().toUpperCase().replace(/\s/g, '');
             let itemName = (item.product_name || "").toUpperCase();
             
-            let isMatch = itemBrand === targetBrand || itemBrand.includes(targetBrand) || itemName.includes(targetBrand);
+            // Pencarian luwes: cek di brand ATAU nama produk
+            let isMatch = itemBrandClean.includes(targetBrandClean) || itemName.replace(/\s/g, '').includes(targetBrandClean);
             if (!isMatch) return false;
 
             if (category === 'pulsa' && (itemName.includes('VOUCHER') || itemName.includes('WIFI'))) return false;
-            if (item.buyer_product_status === false || item.buyer_product_status === 0 || item.buyer_product_status === '0') return false;
 
             return true;
         });
@@ -137,14 +168,12 @@ app.post('/api/create-transaction', async (req, res) => {
             created_at: new Date().toISOString(),
             sn: '-'
         };
+        saveDB(); // Simpan ke file JSON permanen
 
         const midtransServerKey = process.env.MIDTRANS_SERVER_KEY;
-        if (!midtransServerKey) {
-            return res.status(500).json({ message: 'MIDTRANS_SERVER_KEY belum diset di Render!' });
-        }
+        if (!midtransServerKey) return res.status(500).json({ message: 'MIDTRANS_SERVER_KEY belum diset di Render!' });
 
         const authString = Buffer.from(midtransServerKey + ':').toString('base64');
-
         const midtransResponse = await fetch('https://app.midtrans.com/snap/v1/transactions', {
             method: 'POST',
             headers: {
@@ -155,7 +184,7 @@ app.post('/api/create-transaction', async (req, res) => {
             body: JSON.stringify({
                 transaction_details: { order_id: orderId, gross_amount: amount },
                 customer_details: { first_name: "Customer", last_name: targetId },
-                item_details: [{ id: productCode, price: amount, quantity: 1, name: productName || `Top Up ${productCode}` }]
+                item_details: [{ id: productCode, price: amount, quantity: 1, name: productName.substring(0, 50) || `Top Up ${productCode}` }] // Midtrans max name 50 char
             })
         });
 
@@ -196,8 +225,9 @@ app.post('/api/webhook', async (req, res) => {
 
         if (transactionStatus === 'settlement' || transactionStatus === 'capture') {
             if (transactionDB[orderId]) transactionDB[orderId].status = 'SUCCESS (PROCESSING)';
+            saveDB();
 
-            let targetId = notification.customer_details ? (notification.customer_details.last_name || notification.customer_details.full_name) : '';
+            let targetId = transactionDB[orderId] ? transactionDB[orderId].target_id : '';
             let buyerSkuCode = orderId.includes('_') ? orderId.split('_')[1] : '';
 
             const username = process.env.DIGIFLAZZ_USERNAME;
@@ -218,11 +248,15 @@ app.post('/api/webhook', async (req, res) => {
                     if (transactionDB[orderId]) {
                         transactionDB[orderId].status = digiflazzResult.data.status;
                         transactionDB[orderId].sn = digiflazzResult.data.sn || '-';
+                        saveDB(); // Simpan SN ke database JSON
                     }
                 }
             }
         } else if (['cancel', 'expire', 'deny'].includes(transactionStatus)) {
-            if (transactionDB[orderId]) transactionDB[orderId].status = 'FAILED / EXPIRED';
+            if (transactionDB[orderId]) {
+                transactionDB[orderId].status = 'FAILED / EXPIRED';
+                saveDB();
+            }
         }
 
         return res.status(200).json({ message: "Handled" });
