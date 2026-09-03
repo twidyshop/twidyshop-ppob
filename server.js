@@ -156,14 +156,17 @@ app.post('/api/create-transaction', async (req, res) => {
     }
 });
 
-// 3. Endpoint Webhook Midtrans (Diperbaiki agar lolos uji Test URL)
+// 3. Endpoint Webhook Midtrans (GET & POST Handler untuk Lolos Test URL)
+app.get('/api/webhook', (req, res) => {
+    return res.status(200).json({ status: "OK", message: "Webhook GET test successful." });
+});
+
 app.post('/api/webhook', async (req, res) => {
     try {
         const notification = req.body;
         
-        // Antisipasi jika Midtrans mengirim test ping kosong
         if (!notification || !notification.transaction_status) {
-            return res.status(200).json({ status: "OK", message: "Webhook endpoint is active and ready." });
+            return res.status(200).json({ status: "OK", message: "Webhook active." });
         }
 
         const transactionStatus = notification.transaction_status;
