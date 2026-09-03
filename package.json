@@ -1,8 +1,12 @@
 {
-  "name": "twidy-shop",
+  "name": "twidyshop",
   "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
   "dependencies": {
-    "midtrans-client": "^1.4.2",
-    "md5": "^2.3.0"
+    "cors": "^2.8.5",
+    "express": "^4.18.2"
   }
 }
