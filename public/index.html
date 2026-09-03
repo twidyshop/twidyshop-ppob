@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TWIDY SHOP - Pusat Top Up & PPOB Terlengkap</title>
-    <!-- Favicon -->
+    <!-- Favicon dipastikan terbaca -->
     <link rel="icon" href="/icontshop.png" type="image/png">
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -14,15 +14,11 @@
     <style>
         .fade-in { animation: fadeIn 0.25s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        /* Teks Produk Auto Height - Tidak Kepotong Lagi */
         .product-title {
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            text-overflow: ellipsis;
             white-space: normal;
+            word-wrap: break-word;
             line-height: 1.25rem;
-            height: 2.5rem;
         }
         .modal-overlay { background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px); }
         .blinking { animation: blinker 1.5s linear infinite; }
@@ -32,7 +28,6 @@
 <body class="bg-slate-50 text-slate-800 font-sans pb-24 selection:bg-blue-600 selection:text-white" onload="selectCategory('pulsa')">
 
     <header class="bg-blue-600 text-white sticky top-0 z-50 shadow-md">
-        <!-- max-w-5xl agar lebar di PC/Tablet -->
         <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <button id="btnBack" class="hidden text-white hover:text-blue-200 transition" onclick="switchView('catalog')">
@@ -46,7 +41,6 @@
         </div>
     </header>
 
-    <!-- max-w-5xl untuk menyesuaikan layar besar -->
     <main class="max-w-5xl mx-auto px-4 mt-6 relative">
         
         <!-- KATALOG UTAMA -->
@@ -80,7 +74,7 @@
                 </div>
             </div>
 
-            <!-- CONTAINER BRAND DINAMIS (Responsif 2 sampai 5 kolom) -->
+            <!-- CONTAINER BRAND DINAMIS (Responsif) -->
             <div id="dynamicBrandContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-8"></div>
         </div>
 
@@ -95,7 +89,7 @@
             </div>
 
             <form id="formCheckout" class="md:grid md:grid-cols-12 md:gap-6">
-                <!-- Sisi Kiri (Desktop) / Atas (HP) -->
+                <!-- Sisi Kiri / Atas -->
                 <div class="md:col-span-5 lg:col-span-4 space-y-6">
                     <div class="bg-white p-5 md:p-6 rounded-2xl border border-slate-200 shadow-sm">
                         <label id="inputLabelText" class="block text-sm md:text-base font-bold text-slate-800 mb-2 md:mb-3">Masukkan Data Tujuan</label>
@@ -107,14 +101,13 @@
                     </button>
                 </div>
 
-                <!-- Sisi Kanan (Desktop) / Bawah (HP) -->
+                <!-- Sisi Kanan / Bawah -->
                 <div class="md:col-span-7 lg:col-span-8 bg-white p-5 md:p-6 rounded-2xl border border-slate-200 shadow-sm mt-6 md:mt-0">
                     <label class="block text-sm md:text-base font-bold text-slate-800 mb-4">Pilih Nominal Produk</label>
-                    <!-- Perbaikan Layout: Tidak ada batas max-h lagi, responsif sampai 4 kolom -->
                     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3" id="nominalOptions"></div>
                 </div>
 
-                <!-- Tombol Pay versi Mobile (Tampil di HP saja) -->
+                <!-- Tombol Pay versi Mobile -->
                 <button type="submit" id="btnPreparePayMobile" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-600/20 text-sm mt-6 transition disabled:bg-slate-400 md:hidden">
                     Lanjut Konfirmasi
                 </button>
@@ -128,7 +121,7 @@
                     <i class="fas fa-history"></i>
                 </div>
                 <h2 class="font-extrabold text-slate-800 text-lg md:text-xl mb-1">Riwayat Pembelian</h2>
-                <p class="text-xs md:text-sm text-slate-400">Data tersimpan otomatis di perangkat ini. Token muncul jika status Sukses.</p>
+                <p class="text-xs md:text-sm text-slate-400">Data tersimpan otomatis. Token muncul jika status Sukses.</p>
             </div>
             
             <div id="historyResultContainer" class="space-y-4"></div>
@@ -144,10 +137,10 @@
                 <div class="p-6 text-sm md:text-base space-y-4">
                     <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-3">
                         <div class="flex justify-between"><span class="text-slate-500">Tujuan:</span><span id="confirmId" class="font-bold text-slate-800 text-right">-</span></div>
-                        <div class="flex justify-between"><span class="text-slate-500">Produk:</span><span id="confirmProduct" class="font-bold text-slate-800 text-right w-1/2">-</span></div>
-                        <div class="flex justify-between"><span class="text-slate-500">Total Harga:</span><span id="confirmPrice" class="font-bold text-blue-600 text-lg">-</span></div>
+                        <div class="flex justify-between"><span class="text-slate-500">Produk:</span><span id="confirmProduct" class="font-bold text-slate-800 text-right w-1/2 product-title">-</span></div>
+                        <div class="flex justify-between items-center"><span class="text-slate-500">Total Harga:</span><span id="confirmPrice" class="font-bold text-blue-600 text-lg">-</span></div>
                     </div>
-                    <p class="text-xs text-red-500 text-center font-medium">* Barang digital tidak dapat direfund jika ada kesalahan input ID/Nomor.</p>
+                    <p class="text-[10px] md:text-xs text-red-500 text-center font-medium">* Barang digital tidak dapat direfund jika ada kesalahan input ID/Nomor.</p>
                 </div>
                 <div class="flex border-t border-slate-200">
                     <button onclick="closeModal()" class="w-1/2 py-4 text-sm font-bold text-slate-500 hover:bg-slate-50 transition">Batal</button>
@@ -280,11 +273,14 @@
                 const products = await res.json();
                 if (res.ok && Array.isArray(products) && products.length > 0) {
                     container.innerHTML = products.map(p => `
-                        <label class="border border-slate-200 p-3 md:p-4 rounded-xl cursor-pointer hover:border-blue-600 hover:shadow-md flex flex-col justify-between bg-white transition" 
+                        <label class="border border-slate-200 p-3 md:p-4 rounded-xl cursor-pointer hover:border-blue-600 hover:shadow-md flex flex-col bg-white transition min-h-[90px]" 
                                onclick="currentProductName='${p.name.replace(/'/g, "")}'; currentProductCode='${p.sku}'; currentPrice=${p.price};">
-                            <input type="radio" name="nominal" required class="mb-2">
-                            <span class="text-[11px] md:text-xs font-bold text-slate-800 product-title" title="${p.name}">${p.name}</span>
-                            <span class="text-[11px] md:text-sm text-blue-600 font-extrabold mt-2">Rp ${p.price.toLocaleString('id-ID')}</span>
+                            <input type="radio" name="nominal" required class="mb-2 shrink-0 w-4 h-4 text-blue-600">
+                            <!-- Tinggi teks akan otomatis menyesuaikan, tidak kepotong -->
+                            <div class="flex-grow flex flex-col justify-between">
+                                <span class="text-[11px] md:text-xs font-bold text-slate-800 product-title" title="${p.name}">${p.name}</span>
+                                <span class="text-[11px] md:text-sm text-blue-600 font-extrabold mt-2">Rp ${p.price.toLocaleString('id-ID')}</span>
+                            </div>
                         </label>
                     `).join('');
                     btnPay.disabled = false;
@@ -392,7 +388,7 @@
                                         <div class="flex justify-between md:block"><span class="text-slate-400 block md:mb-1">Total</span><span class="font-bold text-emerald-600 md:text-base">Rp ${trx.amount.toLocaleString('id-ID')}</span></div>
                                     </div>
                                     <div class="space-y-2">
-                                        <div class="flex justify-between md:block"><span class="text-slate-400 block md:mb-1">Produk</span><span class="font-bold text-right md:text-left truncate block md:text-base" title="${trx.product_name}">${trx.product_name}</span></div>
+                                        <div class="flex justify-between md:block"><span class="text-slate-400 block md:mb-1">Produk</span><span class="font-bold text-right md:text-left product-title block md:text-base">${trx.product_name}</span></div>
                                     </div>
                                 </div>
                                 
@@ -414,7 +410,7 @@
             if (htmlBlocks.length > 0) {
                 container.innerHTML = htmlBlocks.join('');
             } else {
-                container.innerHTML = `<div class="bg-white p-8 rounded-2xl text-center text-sm text-slate-500 border border-slate-200">Data riwayat tidak ditemukan.</div>`;
+                container.innerHTML = `<div class="bg-white p-8 rounded-2xl text-center text-sm text-slate-500 border border-slate-200">Data riwayat tidak ditemukan di server.</div>`;
             }
 
             return needsPolling;
