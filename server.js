@@ -156,10 +156,16 @@ app.post('/api/create-transaction', async (req, res) => {
     }
 });
 
-// 3. Endpoint Webhook Midtrans (Otomatis Eksekusi ke Digiflazz)
+// 3. Endpoint Webhook Midtrans (Diperbaiki agar lolos uji Test URL)
 app.post('/api/webhook', async (req, res) => {
     try {
         const notification = req.body;
+        
+        // Antisipasi jika Midtrans mengirim test ping kosong
+        if (!notification || !notification.transaction_status) {
+            return res.status(200).json({ status: "OK", message: "Webhook endpoint is active and ready." });
+        }
+
         const transactionStatus = notification.transaction_status;
         const fraudStatus = notification.fraud_status;
 
