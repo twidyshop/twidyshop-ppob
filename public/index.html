@@ -1,240 +1,358 @@
-const express = require('express');
-const crypto = require('crypto');
-const cors = require('cors');
-const path = require('path');
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TWIDY SHOP - Pusat Top Up & PPOB Terlengkap</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://app.midtrans.com/snap/snap.js" data-client-key="CLIENT_KEY_KAMU"></script>
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .fade-in { animation: fadeIn 0.25s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        .tab-content { display: none; }
+        .tab-content.active { display: grid; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans pb-24 selection:bg-blue-600 selection:text-white" onload="filterCategory('pulsa')">
 
-const app = express();
-app.use(express.json());
-app.use(cors());
+    <header class="bg-blue-600 text-white sticky top-0 z-50 shadow-md">
+        <div class="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <button id="btnBack" class="hidden text-white hover:text-blue-200 transition" onclick="switchView('catalog')">
+                    <i class="fas fa-arrow-left text-lg"></i>
+                </button>
+                <div onclick="switchView('catalog')" class="cursor-pointer flex items-center gap-2">
+                    <h1 class="text-xl font-extrabold tracking-wide">TWIDY<span class="text-yellow-300">SHOP</span></h1>
+                </div>
+            </div>
+            <span class="text-xs bg-blue-700 px-2.5 py-1 rounded-full font-medium text-blue-100"><i class="fas fa-circle text-emerald-400 text-[8px] mr-1"></i> Otomatis 24 Jam</span>
+        </div>
+    </header>
 
-app.use(express.static(path.join(__dirname, 'public')));
-
-let cachedProducts = null;
-let cacheTimestamp = 0;
-const CACHE_DURATION = 5 * 60 * 1000; 
-
-// 1. Endpoint Ambil Produk Digiflazz
-app.post('/api/get-products', async (req, res) => {
-    const { brand, category } = req.body; 
-    const username = process.env.DIGIFLAZZ_USERNAME;
-    const apiKey = process.env.DIGIFLAZZ_API_KEY;
-
-    if (!username || !apiKey) {
-        return res.status(500).json({ message: 'API Key Digiflazz belum diatur' });
-    }
-
-    try {
-        const now = Date.now();
-        let data = null;
-
-        if (cachedProducts && (now - cacheTimestamp < CACHE_DURATION)) {
-            data = cachedProducts;
-        } else {
-            const sign = crypto.createHash('md5').update(username + apiKey + 'pricelist').digest('hex');
-            const digiflazzResponse = await fetch('https://api.digiflazz.com/v1/price-list', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ cmd: 'prepaid', username, sign })
-            });
-
-            const rawData = await digiflazzResponse.json();
-            
-            if (rawData.data && Array.isArray(rawData.data)) {
-                data = rawData.data;
-                cachedProducts = data; 
-                cacheTimestamp = now;  
-            } else {
-                return res.status(400).json({ message: 'Gagal ambil data dari pusat' });
-            }
-        }
-
-        let targetBrand = (brand || "").trim().toUpperCase();
-
-        let filtered = data.filter(item => {
-            let itemBrand = (item.brand || "").trim().toUpperCase();
-            let itemName = (item.product_name || "").toUpperCase();
-            
-            let isMatch = false;
-            if (targetBrand === 'TELKOMSEL') {
-                isMatch = itemBrand.includes('TELKOMSEL') || itemBrand.includes('TSEL') || itemName.includes('TELKOMSEL') || itemName.includes('TSEL');
-            } else if (targetBrand === 'INDOSAT') {
-                isMatch = itemBrand.includes('INDOSAT') || itemBrand.includes('ISAT') || itemName.includes('INDOSAT') || itemName.includes('ISAT');
-            } else if (targetBrand === 'TRI') {
-                isMatch = itemBrand.includes('TRI') || itemBrand === '3' || itemName.includes('TRI');
-            } else {
-                isMatch = itemBrand.includes(targetBrand) || itemName.includes(targetBrand);
-            }
-
-            if (!isMatch) return false;
-
-            if (category === 'pulsa') {
-                if (itemName.includes('VOUCHER') || itemName.includes('WIFI')) {
-                    return false;
-                }
-            }
-
-            if (item.buyer_product_status === false || item.buyer_product_status === 0 || item.buyer_product_status === '0') {
-                return false; 
-            }
-
-            return true;
-        });
-
-        filtered.sort((a, b) => a.price - b.price);
-
-        const products = filtered.map(p => ({
-            sku: p.buyer_sku_code,
-            name: p.product_name,
-            price: p.price + 200 // Profit markup Rp 200
-        }));
-
-        return res.status(200).json(products);
+    <main class="max-w-md mx-auto px-4 mt-4">
         
-    } catch (error) {
-        return res.status(500).json({ message: 'Server error: ' + error.message });
-    }
-});
-
-// 2. Endpoint Buat Transaksi Midtrans Snap Token
-app.post('/api/create-transaction', async (req, res) => {
-    try {
-        const { targetId, productCode, price } = req.body;
-
-        if (!targetId || !productCode || !price) {
-            return res.status(400).json({ message: 'Target ID, Produk, dan Harga wajib diisi!' });
-        }
-
-        const orderId = 'TWIDY-' + Date.now();
-        const amount = parseInt(price);
-
-        const midtransServerKey = process.env.MIDTRANS_SERVER_KEY;
-        if (!midtransServerKey) {
-            return res.status(500).json({ message: 'MIDTRANS_SERVER_KEY belum diset di Render!' });
-        }
-
-        const authString = Buffer.from(midtransServerKey + ':').toString('base64');
-
-        const midtransResponse = await fetch('https://app.midtrans.com/snap/v1/transactions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'Authorization': `Basic ${authString}`
-            },
-            body: JSON.stringify({
-                transaction_details: {
-                    order_id: orderId,
-                    gross_amount: amount
-                },
-                customer_details: {
-                    first_name: "Customer",
-                    last_name: targetId 
-                },
-                item_details: [{
-                    id: productCode,
-                    price: amount,
-                    quantity: 1,
-                    name: `Top Up ${productCode}`
-                }]
-            })
-        });
-
-        const midtransData = await midtransResponse.json();
-
-        if (!midtransResponse.ok) {
-            return res.status(400).json({ message: 'Gagal membuat transaksi Midtrans', error: midtransData });
-        }
-
-        return res.status(200).json({
-            token: midtransData.token,
-            redirect_url: midtransData.redirect_url,
-            order_id: orderId
-        });
-
-    } catch (error) {
-        return res.status(500).json({ message: 'Server error: ' + error.message });
-    }
-});
-
-// 3. Endpoint Webhook Midtrans (GET & POST)
-app.get('/api/webhook', (req, res) => {
-    return res.status(200).json({ status: "OK", message: "Webhook endpoint is active." });
-});
-
-app.post('/api/webhook', async (req, res) => {
-    try {
-        const notification = req.body;
-        
-        if (!notification || !notification.transaction_status) {
-            return res.status(200).json({ status: "OK", message: "Webhook ping received." });
-        }
-
-        const transactionStatus = notification.transaction_status;
-        const fraudStatus = notification.fraud_status;
-
-        if (transactionStatus === 'settlement' || (transactionStatus === 'capture' && fraudStatus === 'accept')) {
-            const orderId = notification.order_id;
+        <!-- KATALOG UTAMA -->
+        <div id="viewCatalog" class="fade-in block">
             
-            let targetId = '';
-            if (notification.customer_details) {
-                const fullName = notification.customer_details.full_name || '';
-                const parts = fullName.split(' ');
-                targetId = parts.length > 1 ? parts[parts.length - 1] : fullName;
-                if (!targetId) targetId = notification.customer_details.last_name || '';
-            }
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-5 text-white shadow-lg mb-5 relative overflow-hidden">
+                <div class="relative z-10">
+                    <span class="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Resmi & Legal</span>
+                    <h2 class="text-lg font-bold mt-1">Transaksi Tanpa Ribet</h2>
+                    <p class="text-xs text-blue-100 mt-0.5">Pulsa, Token, E-Money, & Game Instant Masuk.</p>
+                </div>
+                <i class="fas fa-bolt absolute -right-3 -bottom-4 text-7xl text-white/10"></i>
+            </div>
 
-            let buyerSkuCode = '';
-            if (notification.item_details && notification.item_details.length > 0) {
-                const item = notification.item_details[0];
-                buyerSkuCode = item.id || item.sku || '';
+            <!-- Kategori Menu Atas -->
+            <div class="grid grid-cols-4 gap-3 mb-6 text-center">
+                <div onclick="filterCategory('pulsa')" id="menu-pulsa" class="menu-cat bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition">
+                    <div class="w-10 h-10 mx-auto rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mb-1.5"><i class="fas fa-mobile-screen-button"></i></div>
+                    <span class="text-[10px] font-bold text-slate-700">Pulsa</span>
+                </div>
+                <div onclick="filterCategory('games')" id="menu-games" class="menu-cat bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition">
+                    <div class="w-10 h-10 mx-auto rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center mb-1.5"><i class="fas fa-gamepad"></i></div>
+                    <span class="text-[10px] font-bold text-slate-700">Games</span>
+                </div>
+                <div onclick="filterCategory('emoney')" id="menu-emoney" class="menu-cat bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition">
+                    <div class="w-10 h-10 mx-auto rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center mb-1.5"><i class="fas fa-wallet"></i></div>
+                    <span class="text-[10px] font-bold text-slate-700">E-Money</span>
+                </div>
+                <div onclick="filterCategory('pln')" id="menu-pln" class="menu-cat bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition">
+                    <div class="w-10 h-10 mx-auto rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center mb-1.5"><i class="fas fa-lightbulb"></i></div>
+                    <span class="text-[10px] font-bold text-slate-700">PLN</span>
+                </div>
+            </div>
+
+            <!-- TAB KONTEN PULSA -->
+            <div id="grid-pulsa" class="tab-content grid-cols-2 gap-3 mb-6">
+                <div onclick="openCheckout('TELKOMSEL', 'pulsa', 'bg-red-600', 'TS')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-red-600 text-white font-extrabold shadow-inner">TS</div>
+                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">TELKOMSEL</p><p class="text-[10px] text-slate-400">Pulsa Reguler</p></div>
+                </div>
+                <div onclick="openCheckout('INDOSAT', 'pulsa', 'bg-yellow-500', 'IN')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-yellow-500 text-white font-extrabold shadow-inner">IN</div>
+                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">INDOSAT</p><p class="text-[10px] text-slate-400">Pulsa Reguler</p></div>
+                </div>
+                <div onclick="openCheckout('AXIS', 'pulsa', 'bg-purple-600', 'AX')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-purple-600 text-white font-extrabold shadow-inner">AX</div>
+                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">AXIS</p><p class="text-[10px] text-slate-400">Pulsa Reguler</p></div>
+                </div>
+                <div onclick="openCheckout('SMARTFREN', 'pulsa', 'bg-pink-600', 'SM')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-pink-600 text-white font-extrabold shadow-inner">SM</div>
+                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">SMARTFREN</p><p class="text-[10px] text-slate-400">Pulsa Reguler</p></div>
+                </div>
+                <div onclick="openCheckout('TRI', 'pulsa', 'bg-slate-900', '3')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-slate-900 text-white font-extrabold shadow-inner">3</div>
+                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">TRI</p><p class="text-[10px] text-slate-400">Pulsa Reguler</p></div>
+                </div>
+                <div onclick="openCheckout('XL', 'pulsa', 'bg-blue-700', 'XL')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-blue-700 text-white font-extrabold shadow-inner">XL</div>
+                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">XL</p><p class="text-[10px] text-slate-400">Pulsa Reguler</p></div>
+                </div>
+                <div onclick="openCheckout('BY.U', 'pulsa', 'bg-blue-500', 'BY')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-blue-500 text-white font-extrabold shadow-inner">BY</div>
+                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">by.U</p><p class="text-[10px] text-slate-400">Pulsa Reguler</p></div>
+                </div>
+            </div>
+
+            <!-- TAB KONTEN GAMES -->
+            <div id="grid-games" class="tab-content grid-cols-2 gap-3 mb-6">
+                <div onclick="openCheckout('MOBILE LEGENDS', 'games', 'bg-indigo-900', 'ML')" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:border-blue-500 transition p-3 text-center">
+                    <div class="aspect-square rounded-lg bg-indigo-900 text-white font-black text-2xl flex items-center justify-center shadow-inner mb-2">ML</div>
+                    <p class="text-xs font-bold text-slate-700 truncate">MOBILE LEGENDS</p>
+                </div>
+                <div onclick="openCheckout('FREE FIRE', 'games', 'bg-orange-600', 'FF')" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:border-blue-500 transition p-3 text-center">
+                    <div class="aspect-square rounded-lg bg-orange-600 text-white font-black text-2xl flex items-center justify-center shadow-inner mb-2">FF</div>
+                    <p class="text-xs font-bold text-slate-700 truncate">FREE FIRE</p>
+                </div>
+            </div>
+
+            <!-- TAB KONTEN E-MONEY -->
+            <div id="grid-emoney" class="tab-content grid-cols-2 gap-3 mb-6">
+                <div onclick="openCheckout('GO PAY', 'emoney', 'bg-blue-500', 'GP')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-blue-500 text-white font-extrabold shadow-inner">GP</div>
+                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">GO PAY</p></div>
+                </div>
+                <div onclick="openCheckout('OVO', 'emoney', 'bg-purple-700', 'OV')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-purple-700 text-white font-extrabold shadow-inner">OV</div>
+                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">OVO</p></div>
+                </div>
+                <div onclick="openCheckout('DANA', 'emoney', 'bg-blue-400', 'DA')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-blue-400 text-white font-extrabold shadow-inner">DA</div>
+                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">DANA</p></div>
+                </div>
+                <div onclick="openCheckout('SHOPEE PAY', 'emoney', 'bg-orange-500', 'SP')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-orange-500 text-white font-extrabold shadow-inner">SP</div>
+                    <div class="overflow-hidden"><p class="text-xs font-bold text-slate-800">SHOPEE PAY</p></div>
+                </div>
+            </div>
+
+            <!-- TAB KONTEN PLN -->
+            <div id="grid-pln" class="tab-content grid-cols-1 gap-3 mb-6">
+                <div onclick="openCheckout('PLN', 'pln', 'bg-amber-500', 'PLN')" class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-lg shrink-0 flex items-center justify-center bg-amber-500 text-white font-black text-lg shadow-inner">PLN</div>
+                    <div class="overflow-hidden"><p class="text-sm font-bold text-slate-800">PLN</p><p class="text-xs text-slate-400 mt-0.5">Otomatis masuk 24 Jam</p></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FORM CHECKOUT -->
+        <div id="viewCheckout" class="hidden fade-in">
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-4 flex items-center gap-3">
+                <div id="checkoutLogoContainer" class="w-12 h-12 rounded-lg bg-blue-600 flex items-center justify-center shrink-0">
+                    <i class="fas fa-cart-shopping text-white"></i>
+                </div>
+                <div>
+                    <h2 id="checkoutTitle" class="font-bold text-slate-800 text-sm">Nama Produk</h2>
+                    <p class="text-[10px] text-emerald-600 font-medium"><i class="fas fa-check-circle"></i> Proses Otomatis via API</p>
+                </div>
+            </div>
+
+            <form id="formCheckout">
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-4">
+                    <label id="inputLabelText" class="block text-xs font-bold text-slate-700 mb-2">Masukkan User ID / Nomor Tujuan</label>
+                    <input type="text" id="targetId" required placeholder="Contoh: 08123456789" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-600">
+                </div>
+
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-6">
+                    <label class="block text-xs font-bold text-slate-700 mb-2">Pilih Nominal Produk</label>
+                    <div class="grid grid-cols-2 gap-2 max-h-[350px] overflow-y-auto no-scrollbar" id="nominalOptions">
+                    </div>
+                </div>
+
+                <button type="submit" id="btnPay" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-600/20 text-xs transition disabled:bg-slate-400">
+                    Lanjut Pembayaran (Midtrans)
+                </button>
+            </form>
+        </div>
+
+        <!-- VIEW CEK STATUS -->
+        <div id="viewStatus" class="hidden fade-in">
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm mb-4 text-center">
+                <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3 text-lg">
+                    <i class="fas fa-receipt"></i>
+                </div>
+                <h2 class="font-bold text-slate-800 text-sm mb-1">Cek Status Transaksi</h2>
+                <p class="text-[11px] text-slate-400 mb-4">Masukkan Nomor HP atau Order ID untuk mengecek status pesanan.</p>
                 
-                if (!buyerSkuCode && item.name) {
-                    const nameParts = item.name.split(' ');
-                    buyerSkuCode = nameParts[nameParts.length - 1];
-                }
-            }
+                <div class="flex gap-2">
+                    <input type="text" id="searchOrderId" placeholder="Masukkan Order ID / No HP" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-600">
+                    <button onclick="checkOrderStatus()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 rounded-lg text-xs font-bold shrink-0">Cek</button>
+                </div>
+            </div>
+            <div id="statusResultContainer"></div>
+        </div>
+    </main>
 
-            const username = process.env.DIGIFLAZZ_USERNAME;
-            const apiKey = process.env.DIGIFLAZZ_API_KEY;
+    <!-- Bottom Nav -->
+    <div class="fixed bottom-0 w-full bg-white border-t border-slate-200 z-40">
+        <div class="max-w-md mx-auto flex justify-around p-2 text-slate-400">
+            <button onclick="switchView('catalog')" id="nav-catalog" class="flex flex-col items-center text-blue-600 transition">
+                <i class="fas fa-house text-base"></i>
+                <span class="text-[9px] font-bold mt-0.5">Beranda</span>
+            </button>
+            <button onclick="switchView('status')" id="nav-status" class="flex flex-col items-center hover:text-blue-600 transition">
+                <i class="fas fa-receipt text-base"></i>
+                <span class="text-[9px] font-bold mt-0.5">Cek Status</span>
+            </button>
+            <a href="https://wa.me/628970108026?text=Halo%20Admin%20Twidyshop,%20saya%20mau%20tanya%20terkait%20transaksi." target="_blank" class="flex flex-col items-center hover:text-blue-600 transition">
+                <i class="fas fa-headset text-base"></i>
+                <span class="text-[9px] font-bold mt-0.5">Bantuan</span>
+            </a>
+        </div>
+    </div>
 
-            console.log("MENGEKSEKUSI KE DIGIFLAZZ:", { username, buyerSkuCode, targetId, orderId });
+    <script>
+        function filterCategory(categoryName) {
+            document.querySelectorAll('.menu-cat').forEach(el => el.classList.remove('bg-blue-50', 'border-blue-500'));
+            const activeMenu = document.getElementById('menu-' + categoryName);
+            if(activeMenu) activeMenu.classList.add('bg-blue-50', 'border-blue-500');
 
-            if (!username || !apiKey || !buyerSkuCode || !targetId) {
-                console.error("Webhook Gagal: Data tidak lengkap", { buyerSkuCode, targetId });
-                return res.status(200).json({ message: 'Data webhook tidak lengkap' });
-            }
-
-            const refId = orderId;
-            const sign = crypto.createHash('md5').update(username + apiKey + refId).digest('hex');
-
-            const digiflazzResponse = await fetch('https://api.digiflazz.com/v1/transaction', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    username: username,
-                    buyer_sku_code: buyerSkuCode,
-                    customer_no: targetId,
-                    ref_id: refId,
-                    sign: sign
-                })
-            });
-
-            const digiflazzResult = await digiflazzResponse.json();
-            console.log("HASIL DIGIFLAZZ:", digiflazzResult);
-
-            return res.status(200).json({
-                status: "Processed to Digiflazz",
-                digiflazz_response: digiflazzResult
-            });
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            const activeGrid = document.getElementById('grid-' + categoryName);
+            if(activeGrid) activeGrid.classList.add('active');
         }
 
-        return res.status(200).json({ message: "Not settlement yet." });
+        function switchView(view) {
+            document.getElementById('viewCatalog').classList.add('hidden');
+            document.getElementById('viewCheckout').classList.add('hidden');
+            document.getElementById('viewStatus').classList.add('hidden');
+            
+            document.getElementById('nav-catalog').className = "flex flex-col items-center hover:text-blue-600 transition text-slate-400";
+            document.getElementById('nav-status').className = "flex flex-col items-center hover:text-blue-600 transition text-slate-400";
 
-    } catch (error) {
-        console.error("WEBHOOK EXCEPTION:", error);
-        return res.status(200).json({ message: 'Error: ' + error.message });
-    }
-});
+            if(view === 'catalog') {
+                document.getElementById('viewCatalog').classList.remove('hidden');
+                document.getElementById('btnBack').classList.add('hidden');
+                document.getElementById('nav-catalog').className = "flex flex-col items-center text-blue-600 transition";
+            } else if(view === 'status') {
+                document.getElementById('viewStatus').classList.remove('hidden');
+                document.getElementById('btnBack').classList.remove('hidden');
+                document.getElementById('nav-status').className = "flex flex-col items-center text-blue-600 transition";
+            }
+            window.scrollTo(0,0);
+        }
 
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+        async function openCheckout(brandName, categoryType, colorClass, initials) {
+            document.getElementById('viewCatalog').classList.add('hidden');
+            document.getElementById('viewCheckout').classList.remove('hidden');
+            document.getElementById('viewStatus').classList.add('hidden');
+            document.getElementById('btnBack').classList.remove('hidden');
+            
+            document.getElementById('checkoutTitle').innerText = brandName;
+            
+            const logoContainer = document.getElementById('checkoutLogoContainer');
+            logoContainer.className = `w-12 h-12 rounded-lg flex items-center justify-center shrink-0 shadow-inner text-white font-extrabold text-xl ${colorClass}`;
+            logoContainer.innerHTML = initials;
+            
+            const label = document.getElementById('inputLabelText');
+            const targetInput = document.getElementById('targetId');
+            if(categoryType === 'games') {
+                label.innerText = "Masukkan User ID / Zone ID";
+                targetInput.placeholder = "Contoh: 12345678 (1234)";
+            } else if(categoryType === 'pln') {
+                label.innerText = "Masukkan Nomor Meter / ID Pelanggan PLN";
+                targetInput.placeholder = "Contoh: 14123456789";
+            } else {
+                label.innerText = "Masukkan Nomor HP / Akun Tujuan";
+                targetInput.placeholder = "Contoh: 08123456789";
+            }
+
+            const container = document.getElementById('nominalOptions');
+            const btnPay = document.getElementById('btnPay');
+            btnPay.disabled = true;
+
+            container.innerHTML = `<div class="col-span-2 text-center text-xs text-slate-500 py-6"><i class="fas fa-spinner fa-spin mr-2 text-lg"></i> Mengambil data dari pusat...</div>`;
+            window.scrollTo(0,0);
+
+            try {
+                const res = await fetch('/api/get-products', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ brand: brandName, category: categoryType })
+                });
+                
+                const products = await res.json();
+
+                if (res.ok && Array.isArray(products) && products.length > 0) {
+                    container.innerHTML = products.map(p => `
+                        <label class="border border-slate-200 p-2.5 rounded-lg cursor-pointer hover:border-blue-600 flex flex-col">
+                            <input type="radio" name="nominal" value="${p.sku}" data-price="${p.price}" required class="mb-1">
+                            <span class="text-[11px] font-bold text-slate-800 mt-1 truncate" title="${p.name}">${p.name}</span>
+                            <span class="text-[10px] text-blue-600">Rp ${p.price.toLocaleString('id-ID')}</span>
+                        </label>
+                    `).join('');
+                    btnPay.disabled = false;
+                } else {
+                    container.innerHTML = `<div class="col-span-2 text-center text-xs text-red-500 font-bold py-6">Produk sedang kosong / gangguan.</div>`;
+                }
+            } catch (e) {
+                container.innerHTML = `<div class="col-span-2 text-center text-xs text-red-500 py-6">Gagal memuat dari server.</div>`;
+            }
+        }
+
+        function checkOrderStatus() {
+            const query = document.getElementById('searchOrderId').value;
+            const container = document.getElementById('statusResultContainer');
+            if(!query) {
+                alert("Masukkan Order ID atau Nomor HP terlebih dahulu!");
+                return;
+            }
+            container.innerHTML = `<div class="bg-white p-4 rounded-xl border border-slate-200 text-center text-xs text-slate-500">Mencari data transaksi...</div>`;
+            setTimeout(() => {
+                container.innerHTML = `<div class="bg-white p-4 rounded-xl border border-slate-200 text-center text-xs text-slate-600">Belum ada riwayat transaksi untuk "${query}" di sesi browser ini. Silakan hubungi Bantuan WhatsApp jika ada kendala.</div>`;
+            }, 500);
+        }
+
+        document.getElementById('formCheckout').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const targetId = document.getElementById('targetId').value;
+            const selectedNomor = document.querySelector('input[name="nominal"]:checked');
+            const btnPay = document.getElementById('btnPay');
+
+            if (!selectedNomor) {
+                alert("Pilih nominal produk terlebih dahulu!");
+                return;
+            }
+
+            const productCode = selectedNomor.value;
+            const price = selectedNomor.getAttribute('data-price');
+            const originalText = btnPay.innerHTML;
+
+            btnPay.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Menyiapkan Pembayaran...';
+            btnPay.disabled = true;
+
+            try {
+                const response = await fetch('/api/create-transaction', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ targetId, productCode, price }) 
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.token) {
+                    window.snap.pay(data.token, {
+                        onSuccess: function(result){ alert("Pembayaran Berhasil! Pesanan diproses otomatis."); console.log(result);},
+                        onPending: function(result){ alert("Menunggu pembayaran Anda."); console.log(result);},
+                        onError: function(result){ alert("Pembayaran Gagal!"); console.log(result);},
+                        onClose: function(){ alert("Popup pembayaran ditutup."); }
+                    });
+                } else {
+                    alert("Error Midtrans: " + JSON.stringify(data.error || data.message));
+                }
+            } catch (error) {
+                console.error(error);
+                alert("Gagal terhubung ke server backend Render.");
+            } finally {
+                btnPay.innerHTML = originalText;
+                btnPay.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
