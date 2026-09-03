@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 
-// Brankas memori sementara di server Vercel (Cache) dikembalikan ke 5 Menit
+// Brankas memori sementara di server Vercel (Cache) 5 Menit
 let cachedProducts = null;
 let cacheTimestamp = 0;
 const CACHE_DURATION = 5 * 60 * 1000; 
@@ -33,39 +33,51 @@ export default async function handler(req, res) {
 
             const rawData = await digiflazzResponse.json();
             
+            // Cek apakah data benar-benar ada dari Digiflazz
             if (rawData.data && Array.isArray(rawData.data)) {
                 data = rawData.data;
                 cachedProducts = data; 
                 cacheTimestamp = now;  
             } else {
-                return res.status(400).json({ message: 'Gagal ambil data dari pusat' });
+                return res.status(400).json({ message: 'Gagal ambil data dari pusat Digiflazz' });
             }
         }
 
         let targetBrand = (brand || "").trim().toUpperCase();
 
+        // FILTER SUPER LONGGAR
         let filtered = data.filter(item => {
-            let isActive = item.buyer_product_status === true || item.seller_product_status === true;
-            if (!isActive) return false;
-
             let itemBrand = (item.brand || "").trim().toUpperCase();
-            let isBrandMatch = itemBrand === targetBrand || itemBrand.includes(targetBrand);
-
+            let itemName = (item.product_name || "").toUpperCase();
+            
+            // 1. Pastikan nama brand atau nama produk cocok dengan yang diklik (misal: TELKOMSEL)
+            let isBrandMatch = itemBrand.includes(targetBrand) || itemName.includes(targetBrand);
             if (!isBrandMatch) return false;
 
-            // FILTER PALING BENAR: Langsung baca kategori bawaan Digiflazz
+            // 2. Filter khusus pulsa (Buang yang ada kata kunci paket data/voucher)
             if (category === 'pulsa') {
-                let itemCategory = (item.category || "").toUpperCase();
-                return itemCategory === 'PULSA'; 
+                if (itemName.includes('DATA') || 
+                    itemName.includes('INTERNET') || 
+                    itemName.includes('VOUCHER') || 
+                    itemName.includes('WIFI') || 
+                    itemName.includes('PAKET')) {
+                    return false;
+                }
+            }
+
+            // 3. Bypass cek status boolean yang ketat. 
+            // Pokoknya selama Digiflazz tidak explicitly bilang false / 0, kita anggap produknya ADA.
+            if (item.buyer_product_status === false || item.buyer_product_status === 0 || item.buyer_product_status === '0') {
+                return false; 
             }
 
             return true;
         });
 
-        // Urutkan dari yang paling murah
+        // Urutkan harga dari yang termurah ke termahal
         filtered.sort((a, b) => a.price - b.price);
 
-        // Profit Rp 200 sesuai request
+        // Profit Rp 200 perak
         const marginProfit = 200; 
         
         const products = filtered.map(p => ({
@@ -74,6 +86,7 @@ export default async function handler(req, res) {
             price: p.price + marginProfit
         }));
 
+        // Kembalikan daftar produk ke web
         return res.status(200).json(products);
         
     } catch (error) {
