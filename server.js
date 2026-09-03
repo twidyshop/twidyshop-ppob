@@ -55,7 +55,7 @@ async function fetchDigiflazzProducts(username, apiKey) {
     return [];
 }
 
-// 1. Endpoint Ambil Daftar Brand (FILTER DILONGGARKAN 100% MENGIKUTI DIGI)
+// 1. Endpoint Ambil Brand TANPA FILTER (Menampilkan semua yang aktif dari Digiflazz)
 app.get('/api/get-brands/:category', async (req, res) => {
     const category = req.params.category.toLowerCase();
     const username = process.env.DIGIFLAZZ_USERNAME;
@@ -66,32 +66,32 @@ app.get('/api/get-brands/:category', async (req, res) => {
     try {
         const data = await fetchDigiflazzProducts(username, apiKey);
         
-        let filtered = data.filter(item => {
-            // Abaikan produk yang statusnya mati total dari pusat
+        // Ambil semua produk aktif
+        let activeItems = data.filter(item => {
             if (item.buyer_product_status === false || item.buyer_product_status === 0 || item.buyer_product_status === '0') return false;
             
             let cat = (item.category || "").toLowerCase();
-            let brand = (item.brand || "").toLowerCase();
             let name = (item.product_name || "").toLowerCase();
 
+            // Pengelompokan longgar berdasarkan menu klik
             if (category === 'games') {
-                return cat.includes('game') || brand.includes('ml') || brand.includes('ff') || brand.includes('pubg') || brand.includes('gem') || name.includes('dm') || name.includes('uc') || name.includes('diamond');
+                return cat.includes('game') || name.includes('dm') || name.includes('uc') || name.includes('diamond') || name.includes('vale') || name.includes('ff') || name.includes('ml');
             } else if (category === 'emoney') {
-                return cat.includes('money') || cat.includes('wallet') || cat.includes('dana') || cat.includes('ovo') || cat.includes('gopay') || brand.includes('dana') || brand.includes('ovo') || brand.includes('gopay') || brand.includes('shopee') || brand.includes('linkaja') || name.includes('gopay') || name.includes('ovo') || name.includes('dana');
+                return cat.includes('money') || cat.includes('wallet') || name.includes('gopay') || name.includes('ovo') || name.includes('dana') || name.includes('shopeepay') || name.includes('linkaja');
             } else if (category === 'pln') {
-                return cat.includes('pln') || brand.includes('pln') || name.includes('token') || name.includes('pln');
+                return cat.includes('pln') || name.includes('token') || name.includes('pln');
             } else if (category === 'pulsa') {
                 return (cat.includes('pulsa') || cat.includes('xl') || cat.includes('telkomsel') || cat.includes('indosat') || cat.includes('tri') || cat.includes('axis') || cat.includes('smartfren')) && !name.includes('voucher') && !name.includes('wifi');
             }
-            return true; // Jika kategori lain, tampilkan semua
+            return true;
         });
 
-        // Jika hasil filter kosong karena penamaan kategori dari digi beda, fallback tampilkan semua brand unik agar tidak kosong
-        if (filtered.length === 0) {
-            filtered = data;
+        // Jaga-jaga kalau kategori kosong, tampilkan seluruh brand universal agar tidak error
+        if (activeItems.length === 0) {
+            activeItems = data;
         }
 
-        let brandsSet = [...new Set(filtered.map(i => i.brand.toUpperCase()))].sort();
+        let brandsSet = [...new Set(activeItems.map(i => (i.brand || "LOKAL").toUpperCase()))].sort();
         return res.status(200).json(brandsSet);
     } catch (error) {
         return res.status(500).json({ message: 'Server error: ' + error.message });
