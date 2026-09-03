@@ -2,7 +2,7 @@ const express = require('express');
 const crypto = require('crypto');
 const cors = require('cors');
 const path = require('path');
-const fs = require('fs'); // Modul bawaan untuk baca/tulis file JSON
+const fs = require('fs'); 
 
 const app = express();
 app.use(express.json());
@@ -12,7 +12,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ==== FUNGSI DATABASE JSON ====
 const dbFile = path.join(__dirname, 'transactions.json');
 
-// Baca data JSON
 const readDB = () => {
     try {
         if (!fs.existsSync(dbFile)) return [];
@@ -23,9 +22,8 @@ const readDB = () => {
     }
 };
 
-// Simpan data ke JSON (Maksimal simpan 50 transaksi terakhir agar file tidak berat)
 const saveDB = (data) => {
-    const limitedData = data.slice(-50); 
+    const limitedData = data.slice(-50); // Simpan 50 terakhir agar ringan
     fs.writeFileSync(dbFile, JSON.stringify(limitedData, null, 2));
 };
 // ===============================
@@ -73,13 +71,14 @@ app.post('/api/get-products', async (req, res) => {
             if (!item.buyer_product_status || item.buyer_product_status === false || item.buyer_product_status === '0') return false;
 
             let itemBrand = (item.brand || "").trim().toUpperCase().replace(/\s+/g, '');
-            let itemName = (item.product_name || "").toUpperCase();
+            // Filter tambahan: Cek juga dari nama produk untuk mengatasi ketidaksesuaian brand dari pusat
+            let itemName = (item.product_name || "").toUpperCase().replace(/\s+/g, '');
             
-            let isMatch = (itemBrand === targetBrand) || (itemBrand.includes(targetBrand));
+            let isMatch = itemBrand.includes(targetBrand) || itemName.includes(targetBrand);
             if (!isMatch) return false;
 
             if (category === 'pulsa') {
-                if (itemName.includes('DATA') || itemName.includes('VOUCHER') || itemName.includes('WIFI') || itemName.includes('MASA AKTIF')) return false;
+                if (itemName.includes('DATA') || itemName.includes('VOUCHER') || itemName.includes('WIFI') || itemName.includes('MASAAKTIF')) return false;
             } else if (category === 'pln') {
                 if (!itemName.includes('TOKEN') && !itemName.includes('PLN')) return false;
             }
@@ -100,7 +99,7 @@ app.post('/api/get-products', async (req, res) => {
     }
 });
 
-// 2. Endpoint Buat Transaksi Midtrans Snap Token
+// 2. Endpoint Buat Transaksi Midtrans
 app.post('/api/create-transaction', async (req, res) => {
     try {
         const { targetId, productCode, price, productName } = req.body;
@@ -112,7 +111,6 @@ app.post('/api/create-transaction', async (req, res) => {
 
         if (!midtransServerKey) return res.status(500).json({ message: 'MIDTRANS_SERVER_KEY belum diset!' });
 
-        // Simpan transaksi awal ke JSON
         const db = readDB();
         db.push({
             order_id: orderId,
@@ -150,17 +148,20 @@ app.post('/api/create-transaction', async (req, res) => {
     }
 });
 
-// 3. Endpoint Cek Status Transaksi (Dari JSON)
-app.get('/api/check-status/:query', (req, res) => {
-    const query = req.params.query.trim().toLowerCase();
+// 3. Endpoint Cek Status Transaksi (Tarik Otomatis)
+app.get('/api/check-status/:query?', (req, res) => {
+    const query = (req.params.query || '').trim().toLowerCase();
     const db = readDB();
     
-    let matched = db.filter(trx => 
-        trx.order_id.toLowerCase().includes(query) || 
-        trx.target_id.toLowerCase().includes(query)
-    );
+    let matched = db;
+    // Jika ada kata kunci pencarian dan bukan "all", filter datanya
+    if (query && query !== 'all') {
+        matched = db.filter(trx => 
+            trx.order_id.toLowerCase().includes(query) || 
+            trx.target_id.toLowerCase().includes(query)
+        );
+    }
 
-    // Urutkan dari yang terbaru
     matched.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
     if (matched.length > 0) {
@@ -183,7 +184,6 @@ app.post('/api/webhook', async (req, res) => {
         if (trxIndex === -1) return res.status(200).send("Order not found");
 
         if (transactionStatus === 'settlement' || (transactionStatus === 'capture' && fraudStatus === 'accept')) {
-            // Update status ke processing
             db[trxIndex].status = 'PROCESSING';
             saveDB(db);
 
@@ -206,7 +206,6 @@ app.post('/api/webhook', async (req, res) => {
             const digiflazzResult = await digiflazzResponse.json();
             
             if (digiflazzResult && digiflazzResult.data) {
-                // Tarik data terbaru lagi biar nggak bentrok, lalu simpan SN & Status Pusat
                 db = readDB();
                 trxIndex = db.findIndex(t => t.order_id === orderId);
                 db[trxIndex].status = digiflazzResult.data.status;
