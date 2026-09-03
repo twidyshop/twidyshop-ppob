@@ -49,24 +49,34 @@ app.post('/api/get-products', async (req, res) => {
         }
 
         let targetBrand = (brand || "").trim().toUpperCase();
-        let brandAliases = [targetBrand];
-        if (targetBrand === 'TELKOMSEL') brandAliases.push('TSEL');
-        if (targetBrand === 'INDOSAT') brandAliases.push('ISAT');
-        if (targetBrand === 'TRI') brandAliases.push('3');
 
         let filtered = data.filter(item => {
             let itemBrand = (item.brand || "").trim().toUpperCase();
             let itemName = (item.product_name || "").toUpperCase();
+            let itemCategory = (item.category || "").trim().toUpperCase();
             
-            let isBrandMatch = brandAliases.some(alias => itemBrand.includes(alias) || itemName.includes(alias));
-            if (!isBrandMatch) return false;
+            // Logika pencocokan brand yang lebih longgar
+            let isMatch = false;
+            if (targetBrand === 'TELKOMSEL') {
+                isMatch = itemBrand.includes('TELKOMSEL') || itemBrand.includes('TSEL') || itemName.includes('TELKOMSEL') || itemName.includes('TSEL');
+            } else if (targetBrand === 'INDOSAT') {
+                isMatch = itemBrand.includes('INDOSAT') || itemBrand.includes('ISAT') || itemName.includes('INDOSAT') || itemName.includes('ISAT');
+            } else if (targetBrand === 'TRI') {
+                isMatch = itemBrand.includes('TRI') || itemBrand === '3' || itemName.includes('TRI');
+            } else {
+                isMatch = itemBrand.includes(targetBrand) || itemName.includes(targetBrand);
+            }
 
+            if (!isMatch) return false;
+
+            // Filter kategori pulsa
             if (category === 'pulsa') {
                 if (itemName.includes('VOUCHER') || itemName.includes('WIFI')) {
                     return false;
                 }
             }
 
+            // Status produk aktif (bisa boolean true/1/'1')
             if (item.buyer_product_status === false || item.buyer_product_status === 0 || item.buyer_product_status === '0') {
                 return false; 
             }
