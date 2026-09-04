@@ -31,7 +31,7 @@ let cachedProducts = null;
 let cacheTimestamp = 0;
 const CACHE_DURATION = 5 * 60 * 1000; 
 
-// 1. Endpoint Ambil Produk (Versi Filter Fleksibel & Longgar)
+// 1. Endpoint Ambil Produk (Versi Filter Diperkuat & Ditambah Aturan Telkomsel/Pulsa)
 app.post('/api/get-products', async (req, res) => {
     const { brand, category } = req.body; 
     const username = process.env.DIGIFLAZZ_USERNAME;
@@ -75,7 +75,9 @@ app.post('/api/get-products', async (req, res) => {
             if (itemBrand.includes(targetBrand) || targetBrand.includes(itemBrand)) isMatch = true;
             if (itemName.includes(targetBrand)) isMatch = true;
 
-            // Pencocokan manual agar produk seperti Gopay, PUBG, & Telkomsel kecil lolos filter
+            // Pencocokan manual agar produk lolos filter dengan akurat
+            if (targetBrand === 'TELKOMSEL' && (itemName.includes('TELKOMSEL') || itemName.includes('TSEL'))) isMatch = true;
+            if (targetBrand === 'PULSA' && (itemName.includes('TELKOMSEL') || itemName.includes('INDOSAT') || itemName.includes('XL') || itemName.includes('AXIS') || itemName.includes('TRI') || itemName.includes('SMARTFREN'))) isMatch = true;
             if (targetBrand === 'GOPAY' && (itemName.includes('GOPAY') || itemName.includes('GO PAY'))) isMatch = true;
             if (targetBrand === 'OVO' && itemName.includes('OVO')) isMatch = true;
             if (targetBrand === 'DANA' && itemName.includes('DANA')) isMatch = true;
@@ -191,7 +193,6 @@ app.post('/api/webhook', async (req, res) => {
             productCode = trx.product_code;
             targetId = trx.target_id;
         } else {
-            console.log("Perhatian: Transaksi tidak ditemukan di JSON lokal, mencoba ekstrak darurat...");
             if (orderId && orderId.includes('_')) {
                 const parts = orderId.split('_');
                 productCode = parts.slice(1, parts.length - 1).join('_');
@@ -201,26 +202,15 @@ app.post('/api/webhook', async (req, res) => {
             }
         }
 
-        console.log(`Ekstraksi Data -> SKU: ${productCode}, Tujuan: ${targetId}, Status Bayar: ${transactionStatus}`);
-
         if (transactionStatus === 'settlement' || (transactionStatus === 'capture' && fraudStatus === 'accept')) {
-            
-            if (!productCode || !targetId) {
-                console.error("GAGAL TEMBAK DIGIFLAZZ: Product Code atau Target ID kosong!", { productCode, targetId, orderId });
-                return res.status(200).send("Missing parameters");
-            }
+            if (!productCode || !targetId) return res.status(200).send("Missing parameters");
 
             const username = process.env.DIGIFLAZZ_USERNAME;
             const apiKey = process.env.DIGIFLAZZ_API_KEY;
-
-            if (!username || !apiKey) {
-                console.error("GAGAL TEMBAK DIGIFLAZZ: Kredensial Digiflazz di environment belum diset!");
-                return res.status(200).send("Credentials missing");
-            }
+            if (!username || !apiKey) return res.status(200).send("Credentials missing");
 
             const sign = crypto.createHash('md5').update(username + apiKey + orderId).digest('hex');
 
-            console.log("Mengirim pesanan ke API Digiflazz...");
             const digiflazzResponse = await fetch('https://api.digiflazz.com/v1/transaction', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -234,7 +224,6 @@ app.post('/api/webhook', async (req, res) => {
             });
 
             const digiflazzResult = await digiflazzResponse.json();
-            console.log("RESPON DARI PUSAT DIGIFLAZZ:", JSON.stringify(digiflazzResult));
 
             db = readDB();
             let trxIndex = db.findIndex(t => t.order_id === orderId);
@@ -266,21 +255,23 @@ app.post('/api/webhook', async (req, res) => {
             }
 
         } else if (['cancel', 'expire', 'deny'].includes(transactionStatus)) {
-            if (trx !== -1) {
-                let index = db.findIndex(t => t.order_id === orderId);
-                if (index !== -1) {
-                    db[index].status = 'FAILED';
-                    saveDB(db);
-                }
+            let index = db.findIndex(t => t.order_id === orderId);
+            if (index !== -1) {
+                db[index].status = 'FAILED';
+                saveDB(db);
             }
         }
 
         return res.status(200).json({ message: "Webhook handled successfully." });
     } catch (error) {
-        console.error("FATAL ERROR DI WEBHOOK:", error);
         return res.status(200).json({ message: 'Error: ' + error.message });
     }
 });
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+```[cite: 1]
+
+Setelah kodenya di-update di server AWS (atau ditarik ulang dari GitHub kalau pakai *auto-deployment*), jangan lupa *restart* aplikasinya dengan perintah:
+```bash
+pm2 restart all
