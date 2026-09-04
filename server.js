@@ -31,6 +31,13 @@ let cachedProducts = null;
 let cacheTimestamp = 0;
 const CACHE_DURATION = 5 * 60 * 1000; 
 
+// 0. Endpoint GET Client Key untuk Frontend (BARU)
+app.get('/api/get-client-key', (req, res) => {
+    const clientKey = (process.env.MIDTRANS_CLIENT_KEY || '').trim();
+    if (!clientKey) return res.status(500).json({ message: 'Client Key belum diset di server' });
+    return res.status(200).json({ clientKey });
+});
+
 // 1. Endpoint Ambil Produk
 app.post('/api/get-products', async (req, res) => {
     const { brand, category } = req.body; 
