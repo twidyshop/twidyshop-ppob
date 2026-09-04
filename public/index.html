@@ -7,7 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <!-- Ganti CLIENT_KEY_KAMU di bawah ini dengan Client Key asli dari dashboard Midtrans kamu -->
     <script src="https://app.midtrans.com/snap/snap.js" data-client-key="Mid-client-RBuV4MCrCZ5MjLr9"></script>
     <style>
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -433,13 +432,23 @@
 
         async function processPayment() {
             const btnConfirm = document.getElementById('btnConfirmPay');
-            btnConfirm.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Memproses...';
-            btnConfirm.disabled = true;
-
-            const targetId = document.getElementById('targetId').value;
+            const targetIdInput = document.getElementById('targetId');
             const selectedNomor = document.querySelector('input[name="nominal"]:checked');
+            
+            if (!targetIdInput || !targetIdInput.value.trim()) return alert("Masukkan Nomor/ID Tujuan!");
+            if (!selectedNomor) return alert("Pilih nominal produk!");
+
+            const targetId = targetIdInput.value.trim();
             const productCode = selectedNomor.value;
             const price = selectedNomor.getAttribute('data-price');
+
+            if (!productCode) {
+                alert("Kode produk tidak valid!");
+                return;
+            }
+
+            btnConfirm.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Memproses...';
+            btnConfirm.disabled = true;
 
             try {
                 const response = await fetch('/api/create-transaction', {
