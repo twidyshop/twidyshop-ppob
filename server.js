@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const crypto = require('crypto');
 const cors = require('cors');
@@ -30,7 +31,7 @@ let cachedProducts = null;
 let cacheTimestamp = 0;
 const CACHE_DURATION = 5 * 60 * 1000; 
 
-// 1. Endpoint Ambil Produk
+// 1. Endpoint Ambil Produk (Versi Filter Fleksibel & Longgar)
 app.post('/api/get-products', async (req, res) => {
     const { brand, category } = req.body; 
     const username = process.env.DIGIFLAZZ_USERNAME;
@@ -63,27 +64,24 @@ app.post('/api/get-products', async (req, res) => {
         }
 
         let targetBrand = (brand || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
-        let targetCat = (category || "").toLowerCase();
 
         let filtered = data.filter(item => {
             if (item.buyer_product_status === false || item.seller_product_status === false) return false;
 
             let itemBrand = (item.brand || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
             let itemName = (item.product_name || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
-            let itemCat = (item.category || "").toLowerCase().replace(/[^a-z]/g, ''); 
-
-            if (targetCat === 'pulsa' && itemCat !== 'pulsa') return false;
-            if (targetCat === 'games' && itemCat !== 'games') return false;
-            if (targetCat === 'pln' && itemCat !== 'pln') return false;
-            if (targetCat === 'emoney' && itemCat !== 'emoney' && itemCat !== 'ewallet') return false; 
 
             let isMatch = false;
-            if (itemBrand.includes(targetBrand) || (targetBrand.includes(itemBrand) && itemBrand.length > 3)) isMatch = true;
+            if (itemBrand.includes(targetBrand) || targetBrand.includes(itemBrand)) isMatch = true;
             if (itemName.includes(targetBrand)) isMatch = true;
 
-            if (targetBrand === 'MOBILELEGENDS' && (itemBrand.includes('MLBB') || itemName.includes('MOBILELEGEND'))) isMatch = true;
-            if (targetBrand === 'PUBG' && (itemBrand.includes('PUBG') || itemName.includes('PUBG'))) isMatch = true;
-            if (targetBrand === 'GOPAY' && (itemBrand.includes('GOPAY') || (itemBrand.includes('GO') && itemBrand.includes('PAY')))) isMatch = true;
+            // Pencocokan manual agar produk seperti Gopay, PUBG, & Telkomsel kecil lolos filter
+            if (targetBrand === 'GOPAY' && (itemName.includes('GOPAY') || itemName.includes('GO PAY'))) isMatch = true;
+            if (targetBrand === 'OVO' && itemName.includes('OVO')) isMatch = true;
+            if (targetBrand === 'DANA' && itemName.includes('DANA')) isMatch = true;
+            if (targetBrand === 'SHOPEEPAY' && itemName.includes('SHOPEE')) isMatch = true;
+            if (targetBrand === 'PUBG' && itemName.includes('PUBG')) isMatch = true;
+            if (targetBrand === 'MOBILELEGENDS' && (itemName.includes('MOBILE LEGEND') || itemName.includes('ML'))) isMatch = true;
 
             return isMatch;
         });
@@ -172,7 +170,7 @@ app.get('/api/check-status/:query?', (req, res) => {
     }
 });
 
-// 4. Endpoint Webhook Midtrans & Eksekusi Digiflazz (DIJAMIN TEMBAK KE PUSAT)
+// 4. Endpoint Webhook Midtrans & Eksekusi Digiflazz
 app.post('/api/webhook', async (req, res) => {
     console.log("=== WEBHOOK MIDTRANS MASUK ===", JSON.stringify(req.body));
     try {
@@ -183,7 +181,6 @@ app.post('/api/webhook', async (req, res) => {
 
         const { transaction_status: transactionStatus, fraud_status: fraudStatus, order_id: orderId } = notification;
 
-        // Ambil data langsung dari database JSON lokal berdasarkan order_id
         let db = readDB();
         let trx = db.find(t => t.order_id === orderId);
 
@@ -194,11 +191,9 @@ app.post('/api/webhook', async (req, res) => {
             productCode = trx.product_code;
             targetId = trx.target_id;
         } else {
-            // Cadangan jika database JSON terhapus restart: bedah dari order_id dan customer_details
             console.log("Perhatian: Transaksi tidak ditemukan di JSON lokal, mencoba ekstrak darurat...");
             if (orderId && orderId.includes('_')) {
                 const parts = orderId.split('_');
-                // Format order_id kita: TW_productCode_timestamp -> productCode ada di index 1 sampai sebelum index terakhir
                 productCode = parts.slice(1, parts.length - 1).join('_');
             }
             if (notification.customer_details) {
@@ -241,7 +236,6 @@ app.post('/api/webhook', async (req, res) => {
             const digiflazzResult = await digiflazzResponse.json();
             console.log("RESPON DARI PUSAT DIGIFLAZZ:", JSON.stringify(digiflazzResult));
 
-            // Perbarui status di database lokal
             db = readDB();
             let trxIndex = db.findIndex(t => t.order_id === orderId);
 
