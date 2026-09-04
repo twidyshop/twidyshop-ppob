@@ -31,7 +31,7 @@ let cachedProducts = null;
 let cacheTimestamp = 0;
 const CACHE_DURATION = 5 * 60 * 1000; 
 
-// 1. Endpoint Ambil Produk (Versi Filter Diperkuat & Ditambah Aturan Telkomsel/Pulsa)
+// 1. Endpoint Ambil Produk
 app.post('/api/get-products', async (req, res) => {
     const { brand, category } = req.body; 
     const username = process.env.DIGIFLAZZ_USERNAME;
@@ -75,7 +75,6 @@ app.post('/api/get-products', async (req, res) => {
             if (itemBrand.includes(targetBrand) || targetBrand.includes(itemBrand)) isMatch = true;
             if (itemName.includes(targetBrand)) isMatch = true;
 
-            // Pencocokan manual agar produk lolos filter dengan akurat
             if (targetBrand === 'TELKOMSEL' && (itemName.includes('TELKOMSEL') || itemName.includes('TSEL'))) isMatch = true;
             if (targetBrand === 'PULSA' && (itemName.includes('TELKOMSEL') || itemName.includes('INDOSAT') || itemName.includes('XL') || itemName.includes('AXIS') || itemName.includes('TRI') || itemName.includes('SMARTFREN'))) isMatch = true;
             if (targetBrand === 'GOPAY' && (itemName.includes('GOPAY') || itemName.includes('GO PAY'))) isMatch = true;
@@ -109,7 +108,7 @@ app.post('/api/create-transaction', async (req, res) => {
 
         const orderId = `TW_${productCode}_${Date.now()}`;
         const amount = parseInt(price);
-        const midtransServerKey = process.env.MIDTRANS_SERVER_KEY;
+        const midtransServerKey = (process.env.MIDTRANS_SERVER_KEY || '').trim();
 
         if (!midtransServerKey) return res.status(500).json({ message: 'MIDTRANS_SERVER_KEY belum diset!' });
 
@@ -142,7 +141,10 @@ app.post('/api/create-transaction', async (req, res) => {
         });
 
         const midtransData = await midtransResponse.json();
-        if (!midtransResponse.ok) return res.status(400).json({ message: 'Gagal membuat transaksi Midtrans', error: midtransData });
+        if (!midtransResponse.ok) {
+            console.log("Midtrans Error Response:", JSON.stringify(midtransData));
+            return res.status(400).json({ message: 'Gagal membuat transaksi Midtrans', error: midtransData });
+        }
 
         return res.status(200).json({ token: midtransData.token, order_id: orderId });
     } catch (error) {
@@ -174,7 +176,6 @@ app.get('/api/check-status/:query?', (req, res) => {
 
 // 4. Endpoint Webhook Midtrans & Eksekusi Digiflazz
 app.post('/api/webhook', async (req, res) => {
-    console.log("=== WEBHOOK MIDTRANS MASUK ===", JSON.stringify(req.body));
     try {
         const notification = req.body;
         if (!notification || !notification.transaction_status) {
@@ -270,8 +271,3 @@ app.post('/api/webhook', async (req, res) => {
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-```[cite: 1]
-
-Setelah kodenya di-update di server AWS (atau ditarik ulang dari GitHub kalau pakai *auto-deployment*), jangan lupa *restart* aplikasinya dengan perintah:
-```bash
-pm2 restart all
