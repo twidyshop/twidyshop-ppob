@@ -31,7 +31,7 @@ let cachedProducts = null;
 let cacheTimestamp = 0;
 const CACHE_DURATION = 5 * 60 * 1000; 
 
-// 0. Endpoint GET Client Key untuk Frontend (BARU)
+// 0. Endpoint GET Client Key untuk Frontend
 app.get('/api/get-client-key', (req, res) => {
     const clientKey = (process.env.MIDTRANS_CLIENT_KEY || '').trim();
     if (!clientKey) return res.status(500).json({ message: 'Client Key belum diset di server' });
@@ -181,7 +181,7 @@ app.get('/api/check-status/:query?', (req, res) => {
     }
 });
 
-// 4. Endpoint Webhook Midtrans & Eksekusi Digiflazz
+// 4. Endpoint Webhook Midtrans & Eksekusi Digiflazz (DIPERBAIKI)
 app.post('/api/webhook', async (req, res) => {
     try {
         const notification = req.body;
@@ -201,9 +201,10 @@ app.post('/api/webhook', async (req, res) => {
             productCode = trx.product_code;
             targetId = trx.target_id;
         } else {
-            if (orderId && orderId.includes('_')) {
-                const parts = orderId.split('_');
-                productCode = parts.slice(1, parts.length - 1).join('_');
+            // Ekstrak SKU dengan aman berapapun panjang formatnya
+            if (orderId && orderId.startsWith('TW_')) {
+                const lastUnderscore = orderId.lastIndexOf('_');
+                productCode = orderId.substring(3, lastUnderscore);
             }
             if (notification.customer_details) {
                 targetId = notification.customer_details.last_name || '';
