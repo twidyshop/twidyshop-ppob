@@ -181,7 +181,7 @@ app.get('/api/check-status/:query?', (req, res) => {
     }
 });
 
-// 4. Endpoint Webhook Midtrans & Eksekusi Digiflazz (DIPERBAIKI)
+// 4. Endpoint Webhook Midtrans & Eksekusi Digiflazz (DIPERBARUI DENGAN SYNC STATUS)
 app.post('/api/webhook', async (req, res) => {
     try {
         const notification = req.body;
@@ -201,7 +201,6 @@ app.post('/api/webhook', async (req, res) => {
             productCode = trx.product_code;
             targetId = trx.target_id;
         } else {
-            // Ekstrak SKU dengan aman berapapun panjang formatnya
             if (orderId && orderId.startsWith('TW_')) {
                 const lastUnderscore = orderId.lastIndexOf('_');
                 productCode = orderId.substring(3, lastUnderscore);
@@ -241,7 +240,15 @@ app.post('/api/webhook', async (req, res) => {
             let pusatSn = '-';
 
             if (digiflazzResult && digiflazzResult.data) {
-                pusatStatus = digiflazzResult.data.status || 'PROCESSING';
+                const rawStatus = digiflazzResult.data.status;
+                // Petakan status Digiflazz ke status web
+                if (rawStatus === 'Sukses' || rawStatus === true) {
+                    pusatStatus = 'SUKSES';
+                } else if (rawStatus === 'Gagal' || rawStatus === false) {
+                    pusatStatus = 'GAGAL';
+                } else {
+                    pusatStatus = rawStatus || 'PROCESSING';
+                }
                 pusatSn = digiflazzResult.data.sn || '-';
             }
 
@@ -266,7 +273,7 @@ app.post('/api/webhook', async (req, res) => {
         } else if (['cancel', 'expire', 'deny'].includes(transactionStatus)) {
             let index = db.findIndex(t => t.order_id === orderId);
             if (index !== -1) {
-                db[index].status = 'FAILED';
+                db[index].status = 'GAGAL';
                 saveDB(db);
             }
         }
