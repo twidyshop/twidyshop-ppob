@@ -1,9 +1,9 @@
-require('dotenv').config({ override: true });
+require('dotenv').config();
 const express = require('express');
 const crypto = require('crypto');
 const cors = require('cors');
 const path = require('path');
-const fs = require('fs'); 
+const fs = require('fs');
 
 const app = express();
 app.use(express.json());
@@ -15,274 +15,172 @@ const dbFile = path.join(__dirname, 'transactions.json');
 const readDB = () => {
     try {
         if (!fs.existsSync(dbFile)) return [];
-        const data = fs.readFileSync(dbFile, 'utf8');
-        return JSON.parse(data);
+        return JSON.parse(fs.readFileSync(dbFile, 'utf8'));
     } catch (e) {
         return [];
     }
 };
 
 const saveDB = (data) => {
-    const limitedData = data.slice(-50);
-    fs.writeFileSync(dbFile, JSON.stringify(limitedData, null, 2));
+    fs.writeFileSync(dbFile, JSON.stringify(data.slice(-100), null, 2));
 };
 
 let cachedProducts = null;
 let cacheTimestamp = 0;
-const CACHE_DURATION = 5 * 60 * 1000; 
+const CACHE_DURATION = 5 * 60 * 1000;
 
-// 0. Endpoint GET Client Key untuk Frontend
-app.get('/api/get-client-key', (req, res) => {
-    const clientKey = (process.env.MIDTRANS_CLIENT_KEY || '').trim();
-    if (!clientKey) return res.status(500).json({ message: 'Client Key belum diset di server' });
-    return res.status(200).json({ clientKey });
-});
-
-// 1. Endpoint Ambil Produk
 app.post('/api/get-products', async (req, res) => {
-    const { brand, category } = req.body; 
-    const username = process.env.DIGIFLAZZ_USERNAME;
-    const apiKey = process.env.DIGIFLAZZ_API_KEY;
-
-    if (!username || !apiKey) return res.status(500).json({ message: 'API Key Digiflazz belum diatur' });
-
+    const { brand } = req.body;
+    const user = process.env.DIGIFLAZZ_USERNAME;
+    const key = process.env.DIGIFLAZZ_API_KEY;
+    if (!user || !key) return res.status(500).json({ message: 'API Key belum diset' });
+    
     try {
         const now = Date.now();
-        let data = null;
-
-        if (cachedProducts && (now - cacheTimestamp < CACHE_DURATION)) {
-            data = cachedProducts;
-        } else {
-            const sign = crypto.createHash('md5').update(username + apiKey + 'pricelist').digest('hex');
-            const digiflazzResponse = await fetch('https://api.digiflazz.com/v1/price-list', {
+        if (!cachedProducts || (now - cacheTimestamp > CACHE_DURATION)) {
+            const sign = crypto.createHash('md5').update(user + key + 'pricelist').digest('hex');
+            const resp = await fetch('https://api.digiflazz.com/v1/price-list', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ cmd: 'prepaid', username, sign })
+                body: JSON.stringify({ cmd: 'prepaid', username: user, sign })
             });
-
-            const rawData = await digiflazzResponse.json();
-            if (rawData.data && Array.isArray(rawData.data)) {
-                data = rawData.data;
-                cachedProducts = data; 
-                cacheTimestamp = now;  
+            const raw = await resp.json();
+            if (raw.data && Array.isArray(raw.data)) {
+                cachedProducts = raw.data;
+                cacheTimestamp = now;
             } else {
-                return res.status(400).json({ message: 'Gagal ambil data dari pusat' });
+                return res.status(400).json({ message: 'Gagal ambil data' });
             }
         }
-
-        let targetBrand = (brand || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
-
-        let filtered = data.filter(item => {
-            if (item.buyer_product_status === false || item.seller_product_status === false) return false;
-
-            let itemBrand = (item.brand || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
-            let itemName = (item.product_name || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
-
-            let isMatch = false;
-            if (itemBrand.includes(targetBrand) || targetBrand.includes(itemBrand)) isMatch = true;
-            if (itemName.includes(targetBrand)) isMatch = true;
-
-            if (targetBrand === 'TELKOMSEL' && (itemName.includes('TELKOMSEL') || itemName.includes('TSEL'))) isMatch = true;
-            if (targetBrand === 'PULSA' && (itemName.includes('TELKOMSEL') || itemName.includes('INDOSAT') || itemName.includes('XL') || itemName.includes('AXIS') || itemName.includes('TRI') || itemName.includes('SMARTFREN'))) isMatch = true;
-            if (targetBrand === 'GOPAY' && (itemName.includes('GOPAY') || itemName.includes('GO PAY'))) isMatch = true;
-            if (targetBrand === 'OVO' && itemName.includes('OVO')) isMatch = true;
-            if (targetBrand === 'DANA' && itemName.includes('DANA')) isMatch = true;
-            if (targetBrand === 'SHOPEEPAY' && itemName.includes('SHOPEE')) isMatch = true;
-            if (targetBrand === 'PUBG' && itemName.includes('PUBG')) isMatch = true;
-            if (targetBrand === 'MOBILELEGENDS' && (itemName.includes('MOBILE LEGEND') || itemName.includes('ML'))) isMatch = true;
-
-            return isMatch;
-        });
-
-        filtered.sort((a, b) => a.price - b.price);
-        const products = filtered.map(p => ({
-            sku: p.buyer_sku_code,
-            name: p.product_name,
-            price: p.price + 200 
-        }));
-
-        return res.status(200).json(products);
-    } catch (error) {
-        return res.status(500).json({ message: 'Server error: ' + error.message });
+        let tb = (brand || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+        let filtered = cachedProducts;
+        if (tb) {
+            filtered = cachedProducts.filter(i => 
+                (i.brand || "").toUpperCase().includes(tb) || 
+                (i.category || "").toUpperCase().includes(tb) || 
+                (i.product_name || "").toUpperCase().includes(tb)
+            );
+        }
+        res.json(filtered);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
     }
 });
 
-// 2. Endpoint Buat Transaksi Midtrans
+app.get(['/api/transactions', '/api/transaction', '/api/history', '/api/riwayat'], (req, res) => {
+    try {
+        return res.status(200).json(readDB().reverse());
+    } catch (e) {
+        return res.status(500).json({ message: 'Error DB' });
+    }
+});
+
 app.post('/api/create-transaction', async (req, res) => {
     try {
         const { targetId, productCode, price, productName } = req.body;
-        if (!targetId || !productCode || !price) return res.status(400).json({ message: 'Data tidak lengkap!' });
+        if (!targetId || !productCode) return res.status(400).json({ message: 'Data kurang' });
 
         const orderId = `TW_${productCode}_${Date.now()}`;
-        const amount = parseInt(price);
-        const midtransServerKey = (process.env.MIDTRANS_SERVER_KEY || '').trim();
-
-        if (!midtransServerKey) return res.status(500).json({ message: 'MIDTRANS_SERVER_KEY belum diset!' });
+        const amount = parseInt(price || 0);
 
         const db = readDB();
         db.push({
             order_id: orderId,
             target_id: targetId,
             product_code: productCode,
-            product_name: productName,
+            product_name: productName || 'PPOB',
             amount: amount,
-            status: 'PENDING',
+            status: 'UNPAID',
             sn: '-',
             created_at: new Date().toISOString()
         });
         saveDB(db);
 
-        const authString = Buffer.from(midtransServerKey + ':').toString('base64');
-        const midtransResponse = await fetch('https://app.midtrans.com/snap/v1/transactions', {
+        const sKey = process.env.MIDTRANS_SERVER_KEY;
+        const authString = Buffer.from(sKey.trim() + ':').toString('base64');
+        const mtResp = await fetch('https://app.midtrans.com/snap/v1/transactions', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Accept': 'application/json',
                 'Authorization': `Basic ${authString}`
             },
             body: JSON.stringify({
                 transaction_details: { order_id: orderId, gross_amount: amount },
-                customer_details: { first_name: "Customer", last_name: targetId },
-                item_details: [{ id: productCode, price: amount, quantity: 1, name: productName }]
+                customer_details: { first_name: "Customer", last_name: targetId }
             })
         });
 
-        const midtransData = await midtransResponse.json();
-        if (!midtransResponse.ok) {
-            console.log("Midtrans Error Response:", JSON.stringify(midtransData));
-            return res.status(400).json({ message: 'Gagal membuat transaksi Midtrans', error: midtransData });
-        }
+        const mtData = await mtResp.json();
+        if (!mtResp.ok) return res.status(400).json({ message: 'Gagal Midtrans', error: mtData });
 
-        return res.status(200).json({ token: midtransData.token, order_id: orderId });
-    } catch (error) {
-        return res.status(500).json({ message: 'Server error: ' + error.message });
+        return res.status(200).json({ token: mtData.token, orderId, amount, status: 'UNPAID', message: 'OK' });
+    } catch (e) {
+        return res.status(500).json({ message: e.message });
     }
 });
 
-// 3. Endpoint Cek Status
-app.get('/api/check-status/:query?', (req, res) => {
-    const query = (req.params.query || '').trim().toLowerCase();
-    const db = readDB();
-    
-    let matched = db;
-    if (query && query !== 'all') {
-        matched = db.filter(trx => 
-            trx.order_id.toLowerCase().includes(query) || 
-            trx.target_id.toLowerCase().includes(query)
-        );
-    }
-
-    matched.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-    if (matched.length > 0) {
-        return res.status(200).json({ success: true, data: matched });
-    } else {
-        return res.status(404).json({ success: false, message: 'Riwayat tidak ditemukan.' });
-    }
-});
-
-// 4. Endpoint Webhook Midtrans & Eksekusi Digiflazz (DIPERBARUI DENGAN SYNC STATUS)
 app.post('/api/webhook', async (req, res) => {
     try {
-        const notification = req.body;
-        if (!notification || !notification.transaction_status) {
-            return res.status(200).send("OK");
-        }
-
-        const { transaction_status: transactionStatus, fraud_status: fraudStatus, order_id: orderId } = notification;
-
+        const notif = req.body;
+        if (!notif || !notif.transaction_status) return res.status(200).send("OK");
+        
+        const { transaction_status, order_id } = notif;
         let db = readDB();
-        let trx = db.find(t => t.order_id === orderId);
+        let trx = db.find(t => t.order_id === order_id);
+        if (!trx) return res.status(200).send("OK");
 
-        let productCode = '';
-        let targetId = '';
-
-        if (trx) {
-            productCode = trx.product_code;
-            targetId = trx.target_id;
-        } else {
-            if (orderId && orderId.startsWith('TW_')) {
-                const lastUnderscore = orderId.lastIndexOf('_');
-                productCode = orderId.substring(3, lastUnderscore);
-            }
-            if (notification.customer_details) {
-                targetId = notification.customer_details.last_name || '';
-            }
-        }
-
-        if (transactionStatus === 'settlement' || (transactionStatus === 'capture' && fraudStatus === 'accept')) {
-            if (!productCode || !targetId) return res.status(200).send("Missing parameters");
-
-            const username = process.env.DIGIFLAZZ_USERNAME;
-            const apiKey = process.env.DIGIFLAZZ_API_KEY;
-            if (!username || !apiKey) return res.status(200).send("Credentials missing");
-
-            const sign = crypto.createHash('md5').update(username + apiKey + orderId).digest('hex');
-
-            const digiflazzResponse = await fetch('https://api.digiflazz.com/v1/transaction', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    username: username,
-                    buyer_sku_code: productCode,
-                    customer_no: targetId,
-                    ref_id: orderId,
-                    sign: sign
-                })
-            });
-
-            const digiflazzResult = await digiflazzResponse.json();
-
-            db = readDB();
-            let trxIndex = db.findIndex(t => t.order_id === orderId);
-
-            let pusatStatus = 'PROCESSING';
-            let pusatSn = '-';
-
-            if (digiflazzResult && digiflazzResult.data) {
-                const rawStatus = digiflazzResult.data.status;
-                // Petakan status Digiflazz ke status web
-                if (rawStatus === 'Sukses' || rawStatus === true) {
-                    pusatStatus = 'SUKSES';
-                } else if (rawStatus === 'Gagal' || rawStatus === false) {
-                    pusatStatus = 'GAGAL';
-                } else {
-                    pusatStatus = rawStatus || 'PROCESSING';
+        if (transaction_status === 'settlement' || transaction_status === 'capture') {
+            if (['SUKSES', 'DIPROSES', 'GAGAL'].includes(trx.status)) return res.status(200).send("OK");
+            
+            trx.status = 'DIPROSES';
+            saveDB(db);
+            
+            const user = process.env.DIGIFLAZZ_USERNAME;
+            const key = process.env.DIGIFLAZZ_API_KEY;
+            if (user && key) {
+                const sign = crypto.createHash('md5').update(user + key + order_id).digest('hex');
+                try {
+                    const digiRes = await fetch('https://api.digiflazz.com/v1/transaction', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            username: user,
+                            buyer_sku_code: trx.product_code,
+                            customer_no: trx.target_id,
+                            ref_id: order_id,
+                            sign: sign,
+                            testing: false
+                        })
+                    });
+                    const digiData = await digiRes.json();
+                    const result = digiData.data || {};
+                    
+                    if (result.status === 'Sukses' || result.status === 0) {
+                        trx.status = 'SUKSES';
+                    } else if (result.status === 'Gagal') {
+                        trx.status = 'GAGAL';
+                    } else {
+                        trx.status = 'DIPROSES';
+                    }
+                    trx.sn = result.sn || '-';
+                    saveDB(db);
+                } catch (err) {
+                    console.error("Digiflazz Error:", err);
                 }
-                pusatSn = digiflazzResult.data.sn || '-';
             }
-
-            if (trxIndex !== -1) {
-                db[trxIndex].status = pusatStatus;
-                db[trxIndex].sn = pusatSn;
-                saveDB(db);
-            } else {
-                db.push({
-                    order_id: orderId,
-                    target_id: targetId,
-                    product_code: productCode,
-                    product_name: "Produk " + productCode,
-                    amount: parseInt(notification.gross_amount || 0),
-                    status: pusatStatus,
-                    sn: pusatSn,
-                    created_at: new Date().toISOString()
-                });
-                saveDB(db);
-            }
-
-        } else if (['cancel', 'expire', 'deny'].includes(transactionStatus)) {
-            let index = db.findIndex(t => t.order_id === orderId);
-            if (index !== -1) {
-                db[index].status = 'GAGAL';
-                saveDB(db);
-            }
+        } 
+        else if (['expire', 'cancel', 'deny'].includes(transaction_status)) {
+            trx.status = 'GAGAL';
+            saveDB(db);
+        } 
+        else if (transaction_status === 'pending') {
+            trx.status = 'UNPAID';
+            saveDB(db);
         }
-
-        return res.status(200).json({ message: "Webhook handled successfully." });
-    } catch (error) {
-        return res.status(200).json({ message: 'Error: ' + error.message });
+        return res.status(200).send("OK");
+    } catch (e) {
+        return res.status(500).send("Error");
     }
 });
 
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(process.env.PORT || 10000, () => console.log('Server berjalan'));
